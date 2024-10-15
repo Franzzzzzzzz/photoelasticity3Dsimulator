@@ -123,8 +123,6 @@ int main(int argc, char* argv[])
     io::XDMFFile meshfile(MPI_COMM_WORLD, "../sphere_mesh.xdmf", "r");
     auto cel = fem::CoordinateElement<double>(mesh::CellType::tetrahedron, 1, basix::element::lagrange_variant::unset);
     auto mesh = std::make_shared<mesh::Mesh<double>>(meshfile.read_mesh(cel, mesh::GhostMode::shared_facet, "sphere"));
-
-    
     
     auto element = basix::create_element<U>(
         basix::element::family::P, basix::cell::type::tetrahedron, 1,
@@ -232,7 +230,6 @@ int main(int argc, char* argv[])
             if (x(0, p)<-0.9)
             {
               marker[p] = true;
-              printf(".") ; fflush(stdout) ; 
             }
           }          
           return marker;
@@ -280,27 +277,43 @@ int main(int argc, char* argv[])
     //  the solution to a `VTK` file (specified using the suffix `.pvd`)
     //  for visualisation in an external program such as Paraview.
     constexpr auto family = basix::element::family::P;
+    
+    
+    auto interp_mesh = std::make_shared<mesh::Mesh<U>>(
+      mesh::create_box<U>(MPI_COMM_WORLD, {{{-1.0,-1,-1}, {1, 1, 1}}},
+                                {40, 40, 40}, mesh::CellType::tetrahedron));
+    
     auto cell_type
         = mesh::cell_type_to_basix_type(mesh->topology()->cell_type());
     constexpr bool discontinuous = true;
     basix::FiniteElement S_element = basix::create_element<U>(
-        family, cell_type, 1, basix::element::lagrange_variant::unset,
+        family, cell_type, 0, basix::element::lagrange_variant::unset,
         basix::element::dpc_variant::unset, discontinuous);
     auto S = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(
         mesh, S_element, std::vector<std::size_t>{3, 3}));
-    
     auto sigma_expression = fem::create_expression<T, U>(
-        *expression_sphere_sigma, {{"uh", u}}, {});
-    auto sigma = fem::Function<T>(S);
-    sigma.name = "stress";
-    sigma.interpolate(sigma_expression);
+        *expression_sphere_stress, {{"uh", u}}, {});
 
+    auto sigma = fem::Function<T>(S);
+    sigma.name = "cauchy_stress";
+    sigma.interpolate(sigma_expression, *mesh);
+    
+    //sigma.interpolate(sigma_expression, *interp_mesh) ; 
+    auto res = sigma.x()->mutable_array() ; 
+    printf("%ld %g \n",res.size(), res[0]) ;
+    auto Res=mesh->topology()->connectivity(3,0)->array() ; 
+    for (int i=0 ; i<10 ; i++)
+    {
+      printf("%d %d %d %d\n", Res[i*4], Res[i*4+1], Res[i*4+2], Res[i*4+3]) ;
+    }
     
     // Save solution in VTK format
     io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
     file.write<T>({*u}, 0.0);
-    io::VTKFile file_sigma(MPI_COMM_WORLD, "sigma.pvd", "w");
-    file.write<T>({sigma}, 0.0);
+    // Save Cauchy stress in XDMF format
+    io::XDMFFile file_sigma(mesh->comm(), "sigma.xdmf", "w");
+    file_sigma.write_mesh(*mesh);
+    file_sigma.write_function(sigma, 0.0);
 
 #ifdef HAS_ADIOS2
     // Save solution in VTX format

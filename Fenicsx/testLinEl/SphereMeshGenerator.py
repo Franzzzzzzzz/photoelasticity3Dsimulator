@@ -64,4 +64,4 @@ model = gmsh_sphere(model, "Sphere")
 #model.mesh.refine()
 model.setCurrent("Sphere")
 
-create_mesh(MPI.COMM_WORLD, model, "sphere", "sphere_mesh.xdmf", "a")
+create_mesh(MPI.COMM_WORLD, model, "sphere", "sphere_mesh_coarse.xdmf", "w")

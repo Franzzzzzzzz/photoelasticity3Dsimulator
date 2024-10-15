@@ -1,12 +1,13 @@
 #include "Geometry.h"
 
 
-
 class Ray {
 public: 
   vec direction ; 
   vec destination ; 
   vec_stokes polarisation ; 
+  
+  double extra_value=0 ; 
   
   tens get_rotation_matrix() 
   {
@@ -49,16 +50,32 @@ public:
     return res ;     
   }
   
-  void propagate (std::vector<double> ddeltas, std::vector<double> dphis) 
+  void absorbe (double absorption, double ds)
+  {
+    polarisation[0] *= absorption*ds ; 
+  }
+  void propagate (std::vector<double> ddeltas, std::vector<double> dphis, bool print=false) 
   {
     double s2tmp ; 
+    //polarisation.disp() ; 
+    if (print) for (int i=0 ; i<ddeltas.size() ; i++) printf("%g ", ddeltas[i]) ; 
+    /*for (int i=0 ; i<dphis.size() ; i++) printf("%g ", dphis[i]) ; */
     for (size_t i=0 ; i<ddeltas.size() ; i++)
     {
+      if (print) polarisation.disp() ; 
       s2tmp = polarisation[2] ; 
       polarisation[2] += -2*dphis[i]*polarisation[1] - ddeltas[i]*polarisation[3] ; 
       polarisation[1] += 2*dphis[i]*s2tmp ; 
-      polarisation[3] += ddeltas[i]*s2tmp ;       
+      polarisation[3] += ddeltas[i]*s2tmp ;   
+      //printf("%g %g ", dphis[i], ddeltas[i]) ; polarisation.disp() ; 
+      polarisation.normalise_coherent() ; 
     }    
+    //polarisation.disp() ; 
+  }
+  
+  void apply_polariser (mat_stokes pol)
+  {
+    polarisation = pol * polarisation; 
   }
   
   
