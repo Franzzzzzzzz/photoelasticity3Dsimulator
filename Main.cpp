@@ -15,8 +15,8 @@ struct Parameters_
   int imwidth=200, imheight=300 ;
   int screen_width=400, screen_height=600 ;
   int Ns = 100 ; 
-  vec_stokes polarisation{1,0,0,1} ; 
-  double photoelastic_constant = 1; 
+  vec_stokes polarisation{1,0,1,0} ; 
+  double photoelastic_constant = 0; 
   double absorption = 1. ; 
   mat_stokes post_polarisation = Polariser::deg45_lin ; 
   
@@ -43,41 +43,6 @@ int init_display()
   }
   return 1 ; 
 }
-//-----------------------------
-std::vector<double> get_photoelastic_deltas(std::vector<tens> &sigma, double ds)
-{
-  std::vector<double> res ;
-  res.resize(sigma.size()) ; 
-  for (size_t i = 0 ; i<res.size(); i++)
-  {
-    res[i] = Parameters.photoelastic_constant *
-             sqrt( (sigma[i][4]-sigma[i][8])*(sigma[i][4]-sigma[i][8]) + 4 * sigma[i][5] * sigma[i][5] ) * 
-             ds ;
-  }
-  return res ; 
-}
-//-----------------------------
-std::vector<double> get_photoelastic_dphis(std::vector<tens> &sigma, double ds)
-{
-  std::vector<double> phis, dphis ; 
-  phis.resize(sigma.size()) ; 
-  dphis.resize(sigma.size()) ; 
-  for (size_t i=0 ; i<phis.size() ; i++)
-  { 
-    phis[i] = 0.5*atan(2*sigma[i][5]/(sigma[i][4]-sigma[i][8])) ;
-  }
-  for (size_t i=1 ; i<phis.size()-1 ; i++)
-  {
-    dphis[i] = phis[i+1]+phis[i-1] ; 
-    if (dphis[i]>=M_PI/2) dphis[i]-=M_PI ; 
-    if (dphis[i]<=-M_PI/2) dphis[i]+=M_PI ; 
-    dphis[i] /= (2.*ds) ;
-  }
-  dphis[0] = (dphis[1]-dphis[0])/ds ; 
-  dphis[dphis.size()-1] = (dphis[dphis.size()-1]-dphis[dphis.size()-2])/ds ; 
-  return dphis ;  
-}
-
 //==============================================================================
 int main (int argc, char * argv[])
 {
@@ -135,15 +100,16 @@ int main (int argc, char * argv[])
         s = s*R ; 
       }
       // from P. S. Theocaris et al., Matrix Theory of Photoelasticity
-      auto ddelta = get_photoelastic_deltas(stress, ds) ; 
-      auto dphi = get_photoelastic_dphis(stress, ds) ;
+      ray.get_photoelastic_deltas(stress, ds) ; 
+      ray.get_photoelastic_dphis(stress) ;
       
       //ray.absorbe(Parameters.absorption, ds) ; 
-      ray.propagate(ddelta, dphi) ;
+      ray.propagate(Parameters.photoelastic_constant) ;
       
       /*for (int k=0 ; k<9 ; k++)
         printf("%g ", stress[0][k]) ; 
       printf("\n") ; */
+        
       
       ray.extra_value = stress[0].norm() ; 
       for (size_t i=1 ; i<stress.size() ; i++)
@@ -152,12 +118,12 @@ int main (int argc, char * argv[])
     }
     
     ray.apply_polariser (Parameters.post_polarisation) ; 
-    image.set_pixel(i, ray.get_intensity()) ;  
+    image.set_pixel(i, ray.get_intensity()) ;
     image.set_extra_value(i, ray.extra_value) ; 
   }  
   
   printf("ImageDisplayed") ; 
-  image.display(&Parameters.renderer, &Parameters.texture) ;   
+  image.display(&Parameters.renderer, &Parameters.texture) ; 
   //--------------------------------------------
   SDL_Event event;
   while ( SDL_WaitEvent(&event) >= 0 ) {
@@ -165,6 +131,46 @@ int main (int argc, char * argv[])
           case SDL_WINDOWEVENT:
             image.display(&Parameters.renderer, &Parameters.texture) ;   
             break ;
+          case SDL_MOUSEBUTTONDOWN:  
+           {
+            FILE *debug =fopen("Debug.txt", "w") ; 
+            fprintf(debug, "ddeltas/photocst, phis, dphis, sigma[4], sigma[5], sigma[8]\n") ; 
+            
+            Ray ray ; 
+            ray.set_direction(-image.normal) ; 
+            double xscale=Parameters.screen_width/(double)Parameters.imwidth ; 
+            double yscale=Parameters.screen_height/(double)Parameters.imheight ; 
+            printf("%g %g\n", event.button.y/yscale, event.button.x/xscale) ; 
+            ray.set_destination(image.get_location(event.button.y/yscale*Parameters.imwidth+event.button.x/xscale)) ; 
+            ray.set_polarisation (Parameters.polarisation) ;      
+            auto R = ray.get_rotation_matrix() ; 
+            auto Rinv = ray.get_inv_rotation_matrix() ;     
+            auto entryexits = ray.find_grains_entryexit(grains) ; 
+            Geometry::reverse_sort_from(entryexits, ray.destination) ;     
+            for (auto entry : entryexits)
+            {
+              auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ; 
+              auto ids = FE.interpolate(locations) ; 
+              auto stress = grains[entry.objectid].stress_at(ids) ; 
+      
+              for (auto & s: stress)
+              {
+                s = Rinv*s;
+                s = s*R ; 
+              }
+              // from P. S. Theocaris et al., Matrix Theory of Photoelasticity
+              ray.get_photoelastic_deltas(stress, ds) ; 
+              ray.get_photoelastic_dphis(stress) ;
+             
+              for (size_t i=0 ; i<stress.size() ; i++)
+              { 
+                fprintf(debug,"%g, %g, %g, %g, %g, %g\n", ray.ddeltas[i], ray.phis[i], ray.dphis[i], stress[i][4], stress[i][5], stress[i][8]) ;  ;
+              }
+              
+            }            
+            fclose(debug) ; 
+           }
+           break ; 
           case SDL_QUIT:
             exit(0);
           break;

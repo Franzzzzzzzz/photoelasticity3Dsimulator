@@ -52,7 +52,7 @@ public:
     tmp = v[i*3+1] ; v[i*3+1]=v[j*3+1] ; v[j*3+1]=tmp ; 
     tmp = v[i*3+2] ; v[i*3+2]=v[j*3+2] ; v[j*3+2]=tmp ; 
   }
-  void gauss_pivot()
+  /*void gauss_pivot()
   {
     std::array<int 3> p={0,1,2} ; 
     
@@ -93,7 +93,7 @@ public:
     v[7] = 0 ; 
     
     return p ;    
-  }
+  }*/
   
 } ; 
 
@@ -190,10 +190,10 @@ void reverse_sort_from (std::vector<entryexit> & ee, const vec point)
   
 }
 
-std::optional intersection_ray_triangle (vec x0, vec xr, vec xt, vec u, vec v)
+/*std::optional intersection_ray_triangle (vec x0, vec xr, vec xt, vec u, vec v)
 {
   
-}
+}*/
 
 }
 #endif
