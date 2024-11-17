@@ -1,0 +1,12 @@
+- Implementation of continuous ray matrix multiplication, instead of actual propagation. The propagation can be lest as a last step, which would allow changing the incoming polarisation on the fly. 
+- Implement full image save of the ray propagation
+- Keyboard shortcuts. 
+- Multiple ray color
+- tetrahedron to ray interesection (Eigen)
+  - Faster: use connectivity list
+    - Get connectivity from mesh
+      => Very slow, not sure if there would be a better way to do it, couldn't get cell arrays to work.
+    - check intersection Ray-Boundary tetras
+    - Once found, check interesection with adjacent tetras and repeat. 
+    
+    => Current problem, a ray at the boundary could go through several boundary tetras ...Need to refine the handling of boundaries. 

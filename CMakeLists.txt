@@ -13,6 +13,8 @@ if(NOT TARGET dolfinx)
   find_package(DOLFINX REQUIRED)
 endif()
 
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+
 include(CheckSymbolExists)
 set(CMAKE_REQUIRED_INCLUDES ${PETSC_INCLUDE_DIRS})
 check_symbol_exists(PETSC_USE_COMPLEX petscsystypes.h PETSC_SCALAR_COMPLEX)
@@ -43,7 +45,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic")
 
 add_executable(${PROJECT_NAME} Main.cpp ${CMAKE_CURRENT_BINARY_DIR}/sphere.c)
-target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread)
+target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread Eigen3::Eigen)
 
 
 

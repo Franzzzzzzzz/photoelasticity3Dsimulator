@@ -27,7 +27,7 @@ public:
   vec get_location(int i) 
   { 
     vec pt ; 
-    pt[0] = origin[2] - (i%w-w/2)*dz * normal[1] ;
+    pt[0] = origin[0] - (i%w-w/2)*dz * normal[1] ;
     pt[1] = origin[1] + (i%w-w/2)*dz * normal[0] ;
     pt[2] = origin[2] + (i/w-h/2)*dz ;
     return pt ; 

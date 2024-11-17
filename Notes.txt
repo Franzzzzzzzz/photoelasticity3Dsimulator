@@ -1,0 +1,15 @@
+from P. S. Theocaris et al., Matrix Theory of Photoelasticity
+This would be with ray_stokes
+=> ray.get_photoelastic_deltas(stress, ds) ; 
+=> ray.get _photoelastic_dphis(stress) ;
+NB: the projections is along the principle axis of the stress, which is not very good for us. 
+
+
+Optical Phenomena in Photoelastic Models by the Rotation of Principal Axes
+by Hillar K. Aben
+Better approach, effectively using Jones calculus. Use equations (13).
+
+
+
+Ainola L, Aben H. Transformation equation in three-dimensional photoelasticity. J Opt Soc Am A Opt Image Sci Vis. 2006 Mar;23(3):741-6. doi: 10.1364/josaa.23.000741. PMID: 16539073.
+
