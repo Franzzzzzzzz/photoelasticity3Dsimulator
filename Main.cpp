@@ -102,14 +102,6 @@ int main (int argc, char * argv[])
       // Tetra intersection version
       Geometry::intersection_ray_mesh (tetra_intersections, FE.tetras, {ray.destination[0], ray.destination[1], ray.destination[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
     
-      /*if (tetra_intersections.size()<4)
-      {
-        for (auto & v: tetra_intersections)
-          printf("%g %g %d\n", std::get<0>(v), std::get<1>(v), std::get<2>(v));
-        printf("----------------\n") ; 
-      }*/
-      
-      //std::vector<double> lengths ;  lengths.resize(tetra_intersections.size()) ;       
       size_t curid=0 ; 
       if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
       
