@@ -1,4 +1,8 @@
+#ifndef RAY_H
+#define RAY_H
+
 #include "Geometry.h"
+#include "Grains.h"
 #include "unsupported/Eigen/MatrixFunctions"
 
 class Ray {
@@ -8,7 +12,8 @@ public:
   
   // Datas along ray
   double extra_value=0 ; 
-  vec_jones B ; 
+  vec_jones B, Bout ; 
+  std::complex<double> M[4] = {1,0,0,1} ; // Transformation matrix
   
   tens get_rotation_matrix() 
   {
@@ -34,7 +39,7 @@ public:
   void set_direction(vec dir) {direction=dir ; }
   void set_destination(vec dest) {destination=dest; }
   void set_polarisation(vec_jones pol) {B = pol ; }
-  double get_intensity() {return abs(B[0])*abs(B[0])+abs(B[1])*abs(B[1]) ; }
+  double get_intensity() {return abs(Bout[0])*abs(Bout[0])+abs(Bout[1])*abs(Bout[1]) ; }
   
   std::vector<entryexit> find_grains_entryexit(const std::vector<Grains> & grains) 
   {
@@ -53,9 +58,7 @@ public:
   
   void propagate (std::vector<tens> &sigma, double C, double ds)
   {
-    std::complex<double> M[4] = {1,0,0,1} ; 
     std::complex<double> Mnew[4] ; 
-    std::complex<double> Bnew[2] ; 
         
     for (size_t i=0 ; i<sigma.size() ; i++)
     {
@@ -84,11 +87,13 @@ public:
       //B[1] += dB1 ;   
       //B.normalise_coherent() ; 
     }
-    Bnew[0] = M[0]*B[0] + M[1]*B[1] ; 
-    Bnew[1] = M[2]*B[0] + M[3]*B[1] ; 
-    B[0] = Bnew[0] ; 
-    B[1] = Bnew[1] ; 
-    B.normalise_coherent() ; 
+  }
+  
+  void apply_propagation()
+  { 
+    Bout[0] = M[0]*B[0] + M[1]*B[1] ; 
+    Bout[1] = M[2]*B[0] + M[3]*B[1] ; 
+    Bout.normalise_coherent() ; 
   }
   
   
@@ -106,20 +111,26 @@ public:
       M = M*(Mtmp.exp()) ; 
     }
     
-    B[0] = M(0,0)*B[0]+M(0,1)*B[1] ; 
-    B[1] = M(1,0)*B[0]+M(1,1)*B[1] ; 
-    B.normalise_coherent() ;     
+    Bout[0] = M(0,0)*B[0]+M(0,1)*B[1] ; 
+    Bout[1] = M(1,0)*B[0]+M(1,1)*B[1] ; 
+    Bout.normalise_coherent() ;     
   }
 
   
   void apply_polariser (mat_jones pol)
   {
-    B = pol * B; 
+    Bout = pol * Bout; 
   }
   
 } ; 
 
 
+//=======================================================================
+//=======================================================================
+//=======================================================================
+//=======================================================================
+//=======================================================================
+//=======================================================================
 //=======================================================================
 // Ray Stokes, kept for history, do not use.
 class RayJones 
@@ -236,3 +247,5 @@ private:
   }  
   
 } ; 
+
+#endif

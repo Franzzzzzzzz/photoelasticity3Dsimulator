@@ -9,6 +9,8 @@
 #include <iostream>
 #include "Eigen/Dense"
 #include "Algebra.h"
+#include "Parameters.h"
+extern struct Parameters_ Parameters ; 
 
 using namespace std::complex_literals ; 
 
@@ -183,8 +185,8 @@ std::optional<entryexit> intersection_ray_sphere (vec x0, vec xr, vec xc, double
 void reverse_sort_from (std::vector<entryexit> & ee, const vec point) ; 
 
 // Function to compute intersection of a ray and a triangle
-std::optional<double> intersection_ray_triangle_A (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ; 
-std::optional<double> intersection_ray_triangle_B (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ; 
+std::optional<double> intersection_ray_triangle_mollertrumbore (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ; 
+std::optional<double> intersection_ray_triangle_inversion (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ; 
 char intersection_ray_tetra (std::vector<std::tuple<double, double, int>> & inter, const Tetrahedron & tetra, int tetraid, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ;
 void intersection_ray_mesh (std::vector<std::tuple<double, double, int>> & intersect, const std::vector<Tetrahedron> & mesh, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr) ;
 }

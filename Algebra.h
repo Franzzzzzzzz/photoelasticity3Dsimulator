@@ -1,6 +1,10 @@
 #ifndef ALGEBRA_H
 #define ALGEBRA_H
+#include <complex>
+#include <iostream>
+#include <array>
 
+using namespace std::complex_literals ; 
 
 class vec {
 public :
@@ -91,6 +95,14 @@ public:
   std::complex<double> v[4]={1,0, 0,1} ; 
   void disp() {for(int i=0 ; i<4 ; i++) { for (int j=0 ; j<4 ; j++) std::cout << v[i*4+j] << " " ; printf("\n") ; }}
 } ;
+inline bool operator==(mat_jones& lhs, mat_jones& rhs)
+{
+  return (lhs[0]==rhs[0] && lhs[1]==rhs[1] && lhs[2]==rhs[2] && lhs[3]==rhs[3]) ; 
+}
+inline bool operator==(vec_jones& lhs, vec_jones& rhs)
+{
+  return (lhs[0]==rhs[0] && lhs[1]==rhs[1]) ; 
+}
 
 namespace Polariser {
   static mat_stokes horizontal_lin({0.5, 0.5,0,0,  0.5,0.5,0,0, 0,0,0,0, 0,0,0,0}) ; 
@@ -104,9 +116,20 @@ namespace Polariser {
   
   static mat_jones horiz_jones({1,0,0,0}) ; 
   static mat_jones vert_jones({0,0,0,1}) ; 
-  //static mat_jones circright_jones({1/sqrt(2), -1i / sqrt(2)}) ; 
-  //static mat_jones circleft_jones({1/sqrt(2), -1i / sqrt(2)}) ; 
+  static mat_jones Lp45_jones({0.5,0.5,0.5,0.5}) ; 
+  static mat_jones Lm45_jones({0.5,-0.5,-0.5,0.5}) ; 
+  static mat_jones circright_jones({0.5,  0.5i, -0.5i, 0.5}) ; 
+  static mat_jones circleft_jones ({0.5, -0.5i,  0.5i, 0.5}) ; 
   
 } ;
+
+namespace Polarisation {
+  static vec_jones horiz_jones ({1,0}) ;
+  static vec_jones vert_jones ({0,1}) ;
+  static vec_jones Lp45_jones ({1/sqrt(2),+1/sqrt(2)}) ;
+  static vec_jones Lm45_jones ({1/sqrt(2),-1/sqrt(2)}) ;
+  static vec_jones circright_jones ({1/sqrt(2), -1i / sqrt(2)}) ;
+  static vec_jones circleft_jones ( {1/sqrt(2), +1i / sqrt(2)}) ; 
+} ; 
 
 #endif

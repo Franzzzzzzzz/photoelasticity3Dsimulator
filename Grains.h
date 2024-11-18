@@ -1,4 +1,5 @@
-
+#ifndef GRAINS_H
+#define GRAINS_H
 
 
 
@@ -36,3 +37,5 @@ public:
   }
   
 } ;
+
+#endif

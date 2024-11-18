@@ -34,7 +34,7 @@ void Geometry::reverse_sort_from (std::vector<entryexit> & ee, const vec point)
   
 }
 //-----------------------------------------------------------------------
-std::optional<double> Geometry::intersection_ray_triangle_A (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr)
+std::optional<double> Geometry::intersection_ray_triangle_mollertrumbore (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr)
 {
   const double EPSILON = 1e-8;
 
@@ -64,7 +64,7 @@ std::optional<double> Geometry::intersection_ray_triangle_A (const Triangle & tr
   return std::nullopt; // No intersection
 }
 //-----------------------------------------------------------------------
-std::optional<double> Geometry::intersection_ray_triangle_B (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr)
+std::optional<double> Geometry::intersection_ray_triangle_inversion (const Triangle & tri, const Eigen::Vector3d &x0, const Eigen::Vector3d &xr)
 {
   Eigen::Matrix3d A ; 
   //Eigen::Vector3d b = x0-tri.M ; 
@@ -81,9 +81,13 @@ char Geometry::intersection_ray_tetra (std::vector<std::tuple<double, double, in
 {
   std::vector<double> contacts ; 
   char tri_intersect = 0 ; 
+   std::optional<double> ct ; 
   for (int i=0 ; i<4 ; i++)
   {
-    std::optional<double> ct = intersection_ray_triangle_A(tetra.triangles[i], x0, xr) ; 
+    if ( static_cast<int>(Parameters.strategy) & 1)
+      ct=intersection_ray_triangle_inversion(tetra.triangles[i], x0, xr) ; 
+    else 
+      ct=intersection_ray_triangle_mollertrumbore(tetra.triangles[i], x0, xr) ; 
     //std::optional<double> ct = intersection_ray_triangle_B(tetra.triangles[i], x0, xr) ; 
     //if (ct.has_value() || ctB.has_value())
     //  printf("%g %g | ", ct.has_value()?ct.value():0, ctB.has_value()?ctB.value():0) ; 

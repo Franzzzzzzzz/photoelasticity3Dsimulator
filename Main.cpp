@@ -10,23 +10,7 @@
 #include "Ray.h"
 #include "Fem.h"
 
-struct Parameters_
-{
-  int imwidth=100, imheight=150 ;
-  double im_dh=0.02, im_dv=0.02 ; 
-  int screen_width=400, screen_height=600 ;
-  int Ns = 100 ; 
-  vec_jones polarisation = {1/sqrt(2),1/sqrt(2)} ; 
-  double photoelastic_constant = 100; 
-  double absorption = 1. ; 
-  mat_jones post_polarisation = Polariser::vert_jones ; 
-  
-  std::string meshfile = "sphere_mesh.xdmf" ; 
-  
-  SDL_Window* window ;
-  SDL_Renderer* renderer ;
-  SDL_Texture* texture ;
-} Parameters ; 
+struct Parameters_ Parameters ; 
 
 //----------------------------
 int init_display()
@@ -44,6 +28,14 @@ int init_display()
   }
   return 1 ; 
 }
+//----------------------------
+/*calculate_image()
+{
+  
+}*/
+
+
+
 //==============================================================================
 int main (int argc, char * argv[])
 {
@@ -53,8 +45,12 @@ int main (int argc, char * argv[])
   Image image(Parameters.imwidth,Parameters.imheight) ; 
   std::vector<Grains> grains ; 
   
-  image.set_normal({ 1,0,0}) ; 
-  image.set_origin({-1,0,0}) ; 
+  double curangle = M_PI ; 
+  
+  //image.set_normal({ 1,0,0}) ; 
+  //image.set_origin({-1,0,0}) ; 
+  image.set_normal(curangle) ; 
+  image.set_origin(1,curangle) ; 
   image.set_dxdz(Parameters.im_dh, Parameters.im_dv) ; 
   //set_grains_locations ();
   //set_grains_contacts () ;
@@ -73,72 +69,10 @@ int main (int argc, char * argv[])
     printf("FEM finished\n") ; 
   }
   
-  std::vector<std::tuple<double, double, int>> tetra_intersections ; 
-  std::vector<int> ids ; ids.resize(Parameters.Ns) ; 
-  std::vector<int> ids2 ; ids2.resize(Parameters.Ns) ; 
-  
-  
-  for (int i=0 ; i<image.size() ; i++)
-  {
-    Ray ray ; 
-    ray.set_direction(image.normal) ; 
-    ray.set_destination(image.get_location(i)) ; 
-    ray.set_polarisation (Parameters.polarisation) ; 
-    
-    auto R = ray.get_rotation_matrix() ; 
-    auto Rinv = ray.get_inv_rotation_matrix() ; 
-    /*for (int k=0 ; k<9 ; k++)
-      printf("%g ", R[k]) ; 
-    printf("\n") ; */
-    
-    auto entryexits = ray.find_grains_entryexit(grains) ; 
-    Geometry::reverse_sort_from(entryexits, ray.destination) ; 
-    
-    for (auto entry : entryexits)
-    {
-      auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ; 
-      auto ids = FE.interpolate(locations) ;       
-      
-      // Tetra intersection version
-      Geometry::intersection_ray_mesh (tetra_intersections, FE.tetras, {ray.destination[0], ray.destination[1], ray.destination[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
-    
-      size_t curid=0 ; 
-      if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
-      
-      for (size_t j=0 ; j<ids.size() ; j++)
-      {
-        double alpha = (locations[j][0]-image.get_location(i)[0])/(image.normal[0]) ; 
-        
-        for ( ; alpha > std::get<1>(tetra_intersections[curid]) && curid<tetra_intersections.size()-1 ; curid++) ;
-        ids2[j] = std::get<2>(tetra_intersections[curid]) ; 
-      }
-      
-      auto stress = grains[entry.objectid].stress_at(ids2) ; 
-      
-      for (auto & s: stress)
-      {
-        s = Rinv*s;
-        s = s*R ; 
-      }
-      
-      //ray.absorbe(Parameters.absorption, ds) ; 
-      //start = std::chrono::high_resolution_clock::now();
-      ray.propagate(stress, Parameters.photoelastic_constant, ds) ;
-      //ray.propagate_exp(stress, Parameters.photoelastic_constant, lengths) ; 
-      
-      //elapsed2 += std::chrono::high_resolution_clock::now()-start;
-           
-      /*ray.extra_value = stress[0].norm() ; 
-      for (size_t i=1 ; i<stress.size() ; i++)
-        if (stress[i].norm()>ray.extra_value)
-          ray.extra_value = stress[i].norm() ;*/
-    }
-    ray.apply_polariser (Parameters.post_polarisation) ; 
-    image.set_pixel(i, ray.get_intensity()) ;
-    image.set_extra_value(i, ray.extra_value) ; 
-    //auto duration1= std::chrono::duration_cast<std::chrono::microseconds>(elapsed1).count() ; 
-    //printf("%g\n",duration1/1000000.) ; 
-  }  
+  image.set_rays() ; 
+  image.process_rays(FE, grains) ; 
+  image.apply_propagation() ; 
+  image.display(&Parameters.renderer, &Parameters.texture) ; 
   
   printf("ImageDisplayed") ; 
   //auto duration1= std::chrono::duration_cast<std::chrono::microseconds>(elapsed1).count() ; 
@@ -152,6 +86,102 @@ int main (int argc, char * argv[])
           case SDL_WINDOWEVENT:
             image.display(&Parameters.renderer, &Parameters.texture) ;   
             break ;
+          case SDL_KEYDOWN:
+            switch(event.key.keysym.sym) {
+              case SDLK_r: 
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::circright_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::circright_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_l:
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::circleft_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::circleft_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_SLASH:
+              case SDLK_KP_DIVIDE:
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::Lp45_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::Lp45_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_BACKSLASH:
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::Lm45_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::Lm45_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_MINUS:
+              case SDLK_KP_MINUS:
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::horiz_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::horiz_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_EXCLAIM:
+              case SDLK_KP_VERTICALBAR:
+                if (event.key.keysym.mod & KMOD_SHIFT)
+                {
+                  Parameters.polarisation = Polarisation::vert_jones ; 
+                  image.set_rays() ;                  
+                } 
+                else
+                  Parameters.post_polarisation = Polariser::vert_jones ; 
+                image.apply_propagation() ; 
+                Parameters.disp_pol() ; 
+                break ; 
+              case SDLK_LEFT:
+                curangle += 45. * M_PI/180. ; 
+                printf("%g ", curangle/M_PI*180.) ; 
+                image.reset_rays() ; 
+                image.set_normal(curangle) ; 
+                image.set_origin(1,curangle) ;   
+                image.set_rays() ; 
+                image.process_rays(FE, grains) ; 
+                image.apply_propagation() ; 
+                image.display(&Parameters.renderer, &Parameters.texture) ; 
+                break ; 
+              case SDLK_RIGHT:
+                curangle -= 45. * M_PI/180. ; 
+                printf("%g ", curangle/M_PI*180.) ;
+                image.reset_rays() ; 
+                image.set_normal(curangle) ; 
+                image.set_origin(1,curangle) ; 
+                image.set_rays() ; 
+                image.process_rays(FE, grains) ; 
+                image.apply_propagation() ; 
+                image.display(&Parameters.renderer, &Parameters.texture) ; 
+                break ;
+            }
+            image.display(&Parameters.renderer, &Parameters.texture) ; 
+            break ; 
           case SDL_MOUSEBUTTONDOWN:  
            {
             double xscale=Parameters.screen_width/(double)Parameters.imwidth ; 
