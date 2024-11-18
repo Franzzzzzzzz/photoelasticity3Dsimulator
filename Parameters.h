@@ -17,11 +17,14 @@ enum Strategy {LINEAR_NEARESTNEIGHBOUR=0, LINEAR_TETRAHEDRON_INVERSION=1, LINEAR
 struct Parameters_
 {
   int imwidth=100, imheight=150 ;
-  double im_dh=0.02, im_dv=0.02 ; 
+  double im_dh=0.01, im_dv=0.01 ; 
   int screen_width=400, screen_height=600 ;
   int Ns = 100 ; 
   vec_jones polarisation = Polarisation::Lp45_jones ; 
   double photoelastic_constant = 100; 
+  double photoelastic_constant_red   =  100; 
+  double photoelastic_constant_green =  80; 
+  double photoelastic_constant_blue  =  60; 
   double absorption = 1. ; 
   mat_jones post_polarisation = Polariser::vert_jones ; 
   Strategy strategy = LINEAR_TETRAHEDRON_MOLLERTRUMBORE; 

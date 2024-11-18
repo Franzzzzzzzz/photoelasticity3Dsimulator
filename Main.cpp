@@ -78,13 +78,13 @@ int main (int argc, char * argv[])
   //auto duration1= std::chrono::duration_cast<std::chrono::microseconds>(elapsed1).count() ; 
   //auto duration2= std::chrono::duration_cast<std::chrono::microseconds>(elapsed2).count() ; 
   //printf("%g %g\n", duration1/1000000., duration2/1000000.) ; 
-  image.display(&Parameters.renderer, &Parameters.texture) ; 
+  //image.display(&Parameters.renderer, &Parameters.texture) ; 
   //--------------------------------------------
   SDL_Event event;
   while ( SDL_WaitEvent(&event) >= 0 ) {
         switch (event.type) {
           case SDL_WINDOWEVENT:
-            image.display(&Parameters.renderer, &Parameters.texture) ;   
+            //image.display(&Parameters.renderer, &Parameters.texture) ;   
             break ;
           case SDL_KEYDOWN:
             switch(event.key.keysym.sym) {
@@ -178,6 +178,15 @@ int main (int argc, char * argv[])
                 image.process_rays(FE, grains) ; 
                 image.apply_propagation() ; 
                 image.display(&Parameters.renderer, &Parameters.texture) ; 
+                break ;
+              case SDLK_c:
+                image.reset_rays_rgb() ; 
+                image.set_normal(curangle) ; 
+                image.set_origin(1,curangle) ; 
+                image.set_rays_rgb() ; 
+                image.process_rays_rgb(FE, grains) ; 
+                image.apply_propagation_rgb() ; 
+                image.display_rgb(&Parameters.renderer, &Parameters.texture) ; 
                 break ;
             }
             image.display(&Parameters.renderer, &Parameters.texture) ; 

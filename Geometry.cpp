@@ -182,7 +182,8 @@ void Geometry::intersection_ray_mesh (std::vector<std::tuple<double, double, int
       newtetra = std::get<2>(intersect.back()) ; 
       if (newtetra==curtetra)
       {
-        printf("ERR: couldn't find an adjacent tetra traversed by the ray. May or may not be a problem\n") ; 
+        //printf("ERR: couldn't find an adjacent tetra traversed by the ray. May or may not be a problem\n") ; 
+        printf("!") ; 
         break ; 
       }
     }
