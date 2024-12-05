@@ -39,6 +39,8 @@ int init_display()
 //==============================================================================
 int main (int argc, char * argv[])
 {
+  Parameters.preprocessJSON5("../Config.json5") ; 
+  
   init_display() ; 
   //ASSUMPTION: ray always perpendicular to vertical z axis. 
   
