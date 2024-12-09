@@ -14,6 +14,7 @@ if(NOT TARGET dolfinx)
 endif()
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(MPI REQUIRED)
 
 include(CheckSymbolExists)
 set(CMAKE_REQUIRED_INCLUDES ${PETSC_INCLUDE_DIRS})
@@ -42,10 +43,10 @@ add_custom_command(
   COMMENT "Compile sphere.py using FFCx"
 )
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic -L/home/fguillard/miniconda3/envs/fenicsx-env2/lib -L/usr/lib/x86_64-linux-gnu ")
 
 add_executable(${PROJECT_NAME} Main.cpp Image.cpp Geometry.cpp Fem.cpp Cells.cpp ${CMAKE_CURRENT_BINARY_DIR}/sphere.c)
-target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread Eigen3::Eigen mpi)
 
 
 
