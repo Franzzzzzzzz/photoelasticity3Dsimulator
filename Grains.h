@@ -10,6 +10,8 @@ public:
   Grains(vec location, double radius) {center=location ; r = radius ; }
   vec center ; 
   double r ;
+  std::vector<std::array<double, 3>>  contactpoints ;
+  std::vector<std::array<double, 3>>  forces ; 
   
   std::vector<double> stress ; 
   

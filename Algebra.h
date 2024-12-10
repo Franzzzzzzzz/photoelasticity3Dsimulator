@@ -120,7 +120,7 @@ namespace Polariser {
   static mat_jones Lm45_jones({0.5,-0.5,-0.5,0.5}) ; 
   static mat_jones circright_jones({0.5,  0.5i, -0.5i, 0.5}) ; 
   static mat_jones circleft_jones ({0.5, -0.5i,  0.5i, 0.5}) ; 
-  
+  static mat_jones linear_jones(double angle) {return mat_jones({cos(angle)*cos(angle), cos(angle)*sin(angle), cos(angle)*sin(angle), sin(angle)*sin(angle)}) ; }
 } ;
 
 namespace Polarisation {
@@ -130,6 +130,7 @@ namespace Polarisation {
   static vec_jones Lm45_jones ({1/sqrt(2),-1/sqrt(2)}) ;
   static vec_jones circright_jones ({1/sqrt(2), -1i / sqrt(2)}) ;
   static vec_jones circleft_jones ( {1/sqrt(2), +1i / sqrt(2)}) ; 
+  static vec_jones linear_jones(double angle) {return {cos(angle), sin(angle)} ; }
 } ; 
 
 #endif

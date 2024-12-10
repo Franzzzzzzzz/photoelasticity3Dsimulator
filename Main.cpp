@@ -28,18 +28,15 @@ int init_display()
   }
   return 1 ; 
 }
-//----------------------------
-/*calculate_image()
-{
-  
-}*/
-
-
 
 //==============================================================================
 int main (int argc, char * argv[])
 {
-  Parameters.preprocessJSON5("../Config.json5") ; 
+  if (argc>1)
+  {
+    auto j = Parameters.parameters_from_file(argv[1]) ; 
+    Parameters.parse_json(j) ; 
+  }
   
   init_display() ; 
   //ASSUMPTION: ray always perpendicular to vertical z axis. 
@@ -67,7 +64,7 @@ int main (int argc, char * argv[])
   for (size_t i=0 ; i<grains.size() ; i++)
   {
     FE.prepare_mesh(Parameters.meshfile, grains[i].r) ;     
-    FE.get_sigma(grains[i].stress) ;  
+    FE.get_sigma(grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].forces) ;  
     printf("FEM finished\n") ; 
   }
   

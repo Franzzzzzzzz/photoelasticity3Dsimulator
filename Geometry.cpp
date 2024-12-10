@@ -9,7 +9,7 @@ std::optional<entryexit> Geometry::intersection_ray_sphere (vec x0, vec xr, vec 
   
   double delta = b*b - 4 * a * c ; 
   if (delta<=0) return {} ; 
-  entryexit res ; 
+  entryexit res={} ; 
   
   double alpha1 = (-b - sqrt(delta)) / (2*a) ; 
   double alpha2 = (-b + sqrt(delta)) / (2*a) ; 

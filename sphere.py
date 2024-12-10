@@ -65,8 +65,8 @@ V = fem.functionspace(domain, ("Lagrange", 1, (domain.geometry.dim, )))
 
 def clamped_boundary(x):
     return x[0]<-0.9 #np.sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2])<1
-def clamped_boundary(x):
-    return np.isclose(x[0], 0)
+#def clamped_boundary(x):
+    #return np.isclose(x[0], 0)
 
 
 fdim = domain.topology.dim - 1
@@ -85,10 +85,32 @@ def epsilon(u):
 def sigma(u):
     return lambda_ * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2 * mu * epsilon(u)
 
+#class PointLoad(UserExpression):
+    #def __init__(self, pt, vl,tol,**kwargs):
+        #super().__init__(**kwargs)
+        #self.point = pt
+        #self.value = vl
+        #self.tol = tol
+    #def eval(self, values, x):
+        #if near (x[0], self.point[0],self.tol) and near(x[1], self.point[1],self.tol) and near(x[2], self.point[2],self.tol):
+            #values[0] = self.value[0]
+            #values[1] = self.value[1]
+            #values[2] = self.value[2]
+        #else:
+            #values[0] = 0
+            #values[1] = 0
+            #values[2] = 0
+    #def value_shape(self):
+        #return (2,)
 
 u = ufl.TrialFunction(V)
 v = ufl.TestFunction(V)
-f = fem.Constant(domain, (0., 0., rho*g))
+#f = fem.Constant(domain, (0., 0., rho*g))
+#f = PointLoad(pt=(2.5,0), vl=(a0,b0), tol=1e-1,degree = 1)
+f = fem.Function(V)
+f.x.array[:]=0  ; 
+f.x.array[0::3]=rho*g ; 
+
 a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx
 L = ufl.dot(f, v) * ufl.dx + ufl.dot(T, v) * ds
 

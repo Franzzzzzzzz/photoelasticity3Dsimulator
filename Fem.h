@@ -29,10 +29,11 @@ public:
   }
   //------------------------------------------------  
   void prepare_mesh (std::string filename, double scaling=1) ; 
-  void get_sigma(std::vector<double> &result) ; 
+  void get_sigma(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & forces) ; 
   std::vector<int> interpolate(std::vector<vec> & pos) ;
   int interpolate_nearestneighbour_cell (vec & pos) ;
   int interpolate_nearestneighbour(vec & pos) ; 
+  std::vector<int> get_closest_points (const std::vector<std::array<double,3>> & contact_points) ;
   
   std::shared_ptr<mesh::Mesh<double>> mesh ;
   int ncell ; 

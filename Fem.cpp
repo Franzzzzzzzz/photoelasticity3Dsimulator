@@ -129,7 +129,32 @@ void FEsolver::prepare_mesh (std::string filename, double scaling)
   printf("Finished preparing the mesh\n") ; fflush(stdout) ; 
 }
 //------------------------------------------------
-void FEsolver::get_sigma(std::vector<double> &result)
+std::vector<int> FEsolver::get_closest_points (const std::vector<std::array<double,3>> & contact_points)
+{
+  std::vector<int> res(contact_points.size(),0) ; 
+  std::vector<double> dist(contact_points.size(),0) ; 
+  
+  auto meshpoints=mesh->geometry().x() ;
+  int npt = meshpoints.size()/3 ; 
+  
+  auto dst = [&](int a,int b){ return ((contact_points[a][0]-meshpoints[b*3+0]) * (contact_points[a][0]-meshpoints[b*3+0]) + 
+                               (contact_points[a][1]-meshpoints[b*3+1]) * (contact_points[a][1]-meshpoints[b*3+1]) + 
+                               (contact_points[a][2]-meshpoints[b*3+2]) * (contact_points[a][2]-meshpoints[b*3+2])) ; } ; 
+  for (size_t i=0 ; i<contact_points.size() ; i++) 
+    dist[i] = dst(i,0) ;
+  for (int i=1 ; i<npt ; i++)
+  {
+    for (size_t j=0 ; j<contact_points.size() ; j++)
+      if (dst(j,i) < dist[j])
+      {
+        dist[j]=dst(j,i) ;
+        res[j]=i ; 
+      }
+  }
+  return res ;   
+}
+//------------------------------------------------
+void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & forces)
 {    
   auto element = basix::create_element<U>(
       basix::element::family::P, basix::cell::type::tetrahedron, 1,
@@ -137,12 +162,30 @@ void FEsolver::get_sigma(std::vector<double> &result)
       basix::element::dpc_variant::unset, false);
   auto V = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(mesh, element, {3}));
   
-  auto f = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0.016});
+  //auto f = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0.016});
+  auto f = std::make_shared<fem::Function<T>>(V);
+  printf("===> %d ", (*f->x()).array().size()) ; 
+  for (size_t i=0 ; i<(*f->x()).array().size() ; i++) 
+  { 
+    (*f->x()).mutable_array()[i]=0 ; 
+    //if (i%3==2)
+    //  (*f->x()).mutable_array()[i]=0.016 ; 
+  }
+  
+  auto id = get_closest_points(contact_points) ; 
+  printf("==> %d %d", contact_points.size(), id.size()) ; fflush(stdout) ;  
+  for (size_t i=0 ; i<contact_points.size() ; i++)
+  {    
+    (*f->x()).mutable_array()[3*id[i]+0]=forces[i][0] ;
+    (*f->x()).mutable_array()[3*id[i]+1]=forces[i][1] ;
+    (*f->x()).mutable_array()[3*id[i]+2]=forces[i][2] ; 
+  }
+  
   auto g = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0});
   
   // Define variational forms
   auto a = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_a, {V, V}, {}, {}, {}, {}));
-  auto L = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_L, {V}, {}, {{"f", f}, {"T", g}}, {}, {}));
+  auto L = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_L, {V}, {{"f", f}}, {{"T", g}}, {}, {}));
       
   auto u = std::make_shared<fem::Function<T>>(V);
 

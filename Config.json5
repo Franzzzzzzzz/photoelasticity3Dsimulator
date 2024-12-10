@@ -1,8 +1,19 @@
 { 
-  "Photoelastic_constant": 2.5,
-  "Photoelastic rgb constants": 
-    [
-    80,
-    90,
-    100],
+  "photoelastic constant" : [100, 80, 90, 100],
+  "display size": [400,600],
+  "image size": [100,150],
+  "pixel size": 0.01,
+  "mesh": "../meshes/sphere_mesh.xdmf",
+  "grains": [
+    {
+      "center": [0,0,0],
+      "radius": 0.5,
+      "contacts": [
+        {
+          "location": [0,0,0.5],
+          "force": [0,0,100]
+        }      
+      ]
+    }
+  ]
 }
