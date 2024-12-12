@@ -157,7 +157,7 @@ int main (int argc, char * argv[])
                 Parameters.disp_pol() ; 
                 break ; 
               case SDLK_LEFT:
-                curangle += 45. * M_PI/180. ; 
+                curangle += 15. * M_PI/180. ;
                 printf("%g ", curangle/M_PI*180.) ; 
                 image.reset_rays() ; 
                 image.set_normal(curangle) ; 
@@ -168,7 +168,7 @@ int main (int argc, char * argv[])
                 image.display(&Parameters.renderer, &Parameters.texture) ; 
                 break ; 
               case SDLK_RIGHT:
-                curangle -= 45. * M_PI/180. ; 
+                curangle -= 15. * M_PI/180. ;
                 printf("%g ", curangle/M_PI*180.) ;
                 image.reset_rays() ; 
                 image.set_normal(curangle) ; 

@@ -7,16 +7,6 @@ import ufl
 import numpy as np
 import gmsh
 
-L = 1
-W = 0.2
-mu = 1
-rho = 1
-delta = W / L
-gamma = 0.4 * delta**2
-beta = 1.25
-lambda_ = beta
-g = gamma
-
 #domain = mesh.create_box(MPI.COMM_WORLD, [np.array([0, 0, 0]), np.array([L, W, W])],
 #                         [20, 6, 6], cell_type=mesh.CellType.hexahedron)
 
@@ -58,6 +48,8 @@ model.setCurrent("Sphere")
 
 import basix.ufl
 domain, cell_tags, facet_tags = io.gmshio.model_to_mesh(model, MPI.COMM_WORLD, 0)
+mu = fem.Constant(domain, 1.)
+lambda_ = fem.Constant(domain, 1.25)
 element = basix.ufl.element("Lagrange", domain.topology.cell_name(), 1, shape=(domain.geometry.dim, ))
 
 #V = fem.functionspace(domain, element)
@@ -108,8 +100,8 @@ v = ufl.TestFunction(V)
 #f = fem.Constant(domain, (0., 0., rho*g))
 #f = PointLoad(pt=(2.5,0), vl=(a0,b0), tol=1e-1,degree = 1)
 f = fem.Function(V)
-f.x.array[:]=0  ; 
-f.x.array[0::3]=rho*g ; 
+f.x.array[:]=0  ;
+#f.x.array[0::3]=rho*g ;
 
 a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx
 L = ufl.dot(f, v) * ufl.dx + ufl.dot(T, v) * ds

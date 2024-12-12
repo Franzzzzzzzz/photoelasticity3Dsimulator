@@ -3,15 +3,34 @@
 
 
 ## Install
-- Simplest is to start by installing [Miniconda](https://docs.anaconda.com/miniconda/install/)
-- Install [Fenicsx](https://fenicsproject.org/download/)
-- Install gmsh (in the appropriate conda environment) `conda install -c conda-forge gmsh python-gmsh`
-- Install SDL2: `sudo apt install libsdl2-dev`
-- Compile & build: `mkdir build && cd build`
-- `cmake ..`
+1. Simplest is to start by installing [Miniconda](https://docs.anaconda.com/miniconda/install/)
+2. Install [Fenicsx](https://fenicsproject.org/download/)
+3. Install gmsh (in the appropriate conda environment) `conda install -c conda-forge gmsh python-gmsh`
+4. Install SDL2: `sudo apt install libsdl2-dev`
+5. Compile & build: `mkdir build && cd build`
+6. `cmake .. && make`
 
 ## Parameters
 The configuration can be read from a json5 file directly provided on the commandline (`./photoelasticity config.json5`). The following key-values are recognised:
+
+### Finite element parameters
+
+- `mesh`: filename of the mesh to use for the FEM.
+- `material`: object defining the material of the grains. Accepted key-values are:
+  - `lambda`: First Lamé parameter
+  - `mu`: Shear modulus (second Lamé parameter)
+
+### Grain parameters
+
+- `grains`: array of objects defining the grains. Each object contains the following:
+  - `center`: center location for the grains (array with 3 elements)
+  - `radius`: radius
+  - `contacts`: array of objects defining the contacts. Each object contains:
+    - `location`: point at which the force will be applied. More precisely, the force will be applied on the mesh point closest to that location. (array with 3 elements)
+    - `force`: the force applied (array with 3 elements).
+
+### Photoelasticity parameters
+
 - `photoelastic constant`: 
   - Single number: constant for the monochrome photoelasticity
   - array of 3 numbers: constants for the reg, green, and blue wavelengths. 
@@ -23,12 +42,18 @@ The configuration can be read from a json5 file directly provided on the command
 
 The polarisation can be given as a single number, corresponding to the angle from horizontal of the fast axis of a linear polariser, or one of the words "horizontal", "vertical", "right", "left", the latter two corresponding to circular polarisation. 
 
-- `mesh`: filename of the mesh to use for the FEM. 
+### Virtual detector parameters
+The detector always points towards (0,0,0).
 
-- `image size: [width, height]`: size of the image to produce, in pixels. 
-- `pixel size`: physical size of the pixels of the image (in distance unit). 
+- `detector`: object defining the detector. Contains:
+  - `image size: [width, height]`: size of the image to produce, in pixels.
+  - `pixel size`: physical size of the pixels of the image (in distance unit).
+  - `distance`: distance between the center and the detector.
+  - `azymuth`: angle between the center of the detector and the x-axis.
+
+### Display and calculation parameters
+
 - `display size: [width, height]`: size of the display, in pixels. The displayed imahe is interpolated from the ray calculation on the image size.  
-
 - `sampling`: integer, default:100. Sampling rate for the ray propagation. 
 - `strategy`: modify the internal calculation performed by the software. The following are currently defined: 
   - LINEAR_NEARESTNEIGHBOUR: equidistant sampling along the ray within the grain, each point is allocated the stress in the "nearest" tetrahedron, calculated from the center of mass of the tetrahedron.
@@ -39,3 +64,9 @@ The polarisation can be given as a single number, corresponding to the angle fro
 
 ## Interactive mode shortcuts
 Several key shortcuts are defined in interactive mode to modify on the fly the displayed image:
+- Setting the polarisation:
+  - `SHIFT` with any of the following characters sets the polarisation of the incoming light. Without shift, sets the polariser added just before the detector.
+  - `r` and `l`: right and left circular polarisation
+  - `-`, `/`, `!`, `\`: linear polarisations at 0°, 45°, 90°, and -45°, respectively.
+- `LEFT` and `RIGHT` arrows: rotate the source-detector around the object by +15° or -15°.
+- `c`: toggle color mode.

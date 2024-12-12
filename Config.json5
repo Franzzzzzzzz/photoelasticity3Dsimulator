@@ -1,9 +1,12 @@
 { 
+  "detector": {
+    "distance": 1,
+    "azymuth": 180,
+    "pixel size": 0.01,
+    "image size": [100,150]
+  },
   "photoelastic constant" : [100, 80, 90, 100],
   "display size": [400,600],
-  "image size": [100,150],
-  "pixel size": 0.01,
-  "mesh": "../meshes/sphere_mesh.xdmf",
   "grains": [
     {
       "center": [0,0,0],
@@ -15,5 +18,11 @@
         }      
       ]
     }
-  ]
+  ],
+  "mesh": "../meshes/sphere_mesh.xdmf",
+  "material": {
+    "lambda": 1e6,
+    "mu": 1e6,
+    "rho": 1200
+  }
 }

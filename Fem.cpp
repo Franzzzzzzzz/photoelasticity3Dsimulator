@@ -182,9 +182,11 @@ void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::arr
   }
   
   auto g = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0});
+  auto mu = std::make_shared<fem::Constant<T>>(1);
+  auto lbd = std::make_shared<fem::Constant<T>>(1.25);
   
   // Define variational forms
-  auto a = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_a, {V, V}, {}, {}, {}, {}));
+  auto a = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_a, {V, V}, {}, {{"mu", mu}, {"lambda_", lbd}}, {}, {}));
   auto L = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_L, {V}, {{"f", f}}, {{"T", g}}, {}, {}));
       
   auto u = std::make_shared<fem::Function<T>>(V);
@@ -264,11 +266,11 @@ void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::arr
   auto S = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(
       mesh, S_element, std::vector<std::size_t>{3, 3}));
   auto sigma_expression = fem::create_expression<T, U>(
-      *expression_sphere_stress, {{"uh", u}}, {});
+      *expression_sphere_stress, {{"uh", u}}, {{"mu", mu}, {"lambda_", lbd}});
 
   auto sigma = fem::Function<double>(S);
   sigma.name = "cauchy_stress";
-  sigma.interpolate(sigma_expression, *mesh);
+  sigma.interpolate(sigma_expression/*, *mesh*/);
   auto res = sigma.x()->mutable_array() ; 
   
   result.resize(res.size()) ; 
