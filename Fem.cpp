@@ -195,23 +195,26 @@ void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::arr
       *V,
       [](auto x)
       {
-        //constexpr U eps = 1.0e-6;
+        constexpr U eps = 1.0e-6;
         std::vector<std::int8_t> marker(x.extent(1), false);
         
-        /*for (std::size_t p = 0; p < x.extent(1); ++p)
+        int count = 0 ; 
+        for (std::size_t p = 0; p < x.extent(1); ++p)
         {
-          if (std::abs(x(0, p)) < eps)
+          if (std::abs(x(1, p)) < eps && std::abs(x(2, p)) < eps && std::abs(x(3, p)) < eps)
           {
+            count ++ ;
             marker[p] = true;
           }
-        }*/
-        for (std::size_t p = 0; p < x.extent(1); ++p)
+        }
+        printf("BOUNDARY CONDITIONS: %d %d \n", count, x.extent(1)) ; 
+        /*for (std::size_t p = 0; p < x.extent(1); ++p)
         {
           if (x(1, p)<-0.45)
           {
             marker[p] = true;
           }
-        }          
+        }*/
         return marker;
       });
   
@@ -270,7 +273,11 @@ void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::arr
 
   auto sigma = fem::Function<double>(S);
   sigma.name = "cauchy_stress";
-  sigma.interpolate(sigma_expression/*, *mesh*/);
+#if DOLFINX_VERSION_MINOR <= 8 
+  sigma.interpolate(sigma_expression, *mesh);
+#else
+  sigma.interpolate(sigma_expression);
+#endif
   auto res = sigma.x()->mutable_array() ; 
   
   result.resize(res.size()) ; 

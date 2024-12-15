@@ -36,6 +36,9 @@ struct Parameters_
   double photoelastic_constant_blue  =  60; 
   bool color = false ; 
   double absorption = 0. ; 
+  double azimuth = M_PI ; 
+  double distance = 1. ; 
+  double lame[2]={1.,1.} ; 
   mat_jones post_polarisation = Polariser::vert_jones ; 
   Strategy strategy = LINEAR_TETRAHEDRON_MOLLERTRUMBORE; 
   
@@ -59,6 +62,34 @@ struct Parameters_
     }
   }
   
+  void parse_json_detector (const nlohmann::json & j)
+  {
+    for (auto& [key, value] : j.items())
+    {
+      if (key == "distance")
+        distance = value ; 
+      else if (key == "azimuth")
+        azimuth = value.get<double>()/180.*M_PI ; 
+      else if (key == "image size") 
+      {
+        imwidth = value[0] ; 
+        imheight = value[1] ;          
+      }
+      else if (key == "pixel size")
+      {
+        if (value.is_array())
+        {
+          im_dh = value[0] ; 
+          im_dv = value[1] ; 
+        }
+        else 
+          im_dh = im_dv = value ; 
+      }
+      else 
+        printf("Unknown detector key: %s \n", key.c_str()) ; 
+    }    
+  }
+  
   void parse_json (const nlohmann::json &j)
   {
     for (auto& [key, value] : j.items())
@@ -73,20 +104,12 @@ struct Parameters_
         meshfile = value ; 
       else if (key == "grains")
         parse_json_grains(j["grains"]) ; 
-      else if (key=="image size") 
+      else if (key == "detector")
+        parse_json_detector (j["detector"]) ; 
+      else if (key == "material")
       {
-        imwidth = value[0] ; 
-        imheight = value[1] ;          
-      }
-      else if (key == "pixel size")
-      {
-        if (value.is_array())
-        {
-          im_dh = value[0] ; 
-          im_dv = value[1] ; 
-        }
-        else 
-          im_dh = im_dv = value ; 
+        lame[0] = value["lambda"] ; 
+        lame[1] = value["mu"] ; 
       }
       else if (key== "display size") 
       {

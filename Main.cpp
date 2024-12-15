@@ -42,18 +42,9 @@ int main (int argc, char * argv[])
   //ASSUMPTION: ray always perpendicular to vertical z axis. 
   
   Image image(Parameters.imwidth,Parameters.imheight) ; 
-  std::vector<Grains> grains ; 
-  
-  double curangle = M_PI ; 
-  
-  //image.set_normal({ 1,0,0}) ; 
-  //image.set_origin({-1,0,0}) ; 
-  image.set_normal(curangle) ; 
-  image.set_origin(1,curangle) ; 
+   
+  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
   image.set_dxdz(Parameters.im_dh, Parameters.im_dv) ; 
-  //set_grains_locations ();
-  //set_grains_contacts () ;
-  grains.push_back(Grains({0,0,0}, 0.5)) ; 
   
   FEsolver FE(argc, &argv) ; 
   
@@ -61,15 +52,15 @@ int main (int argc, char * argv[])
   auto elapsed1 = std::chrono::high_resolution_clock::now()-start;
   auto elapsed2 = std::chrono::high_resolution_clock::now()-start;
   
-  for (size_t i=0 ; i<grains.size() ; i++)
+  for (size_t i=0 ; i<Parameters.grains.size() ; i++)
   {
-    FE.prepare_mesh(Parameters.meshfile, grains[i].r) ;     
-    FE.get_sigma(grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].forces) ;  
+    FE.prepare_mesh(Parameters.meshfile, Parameters.grains[i].r) ;     
+    FE.get_sigma(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].forces) ;  
     printf("FEM finished\n") ; 
   }
   
   image.set_rays() ; 
-  image.process_rays(FE, grains) ; 
+  image.process_rays(FE, Parameters.grains) ; 
   image.apply_propagation() ; 
   image.display(&Parameters.renderer, &Parameters.texture) ; 
   
@@ -157,33 +148,30 @@ int main (int argc, char * argv[])
                 Parameters.disp_pol() ; 
                 break ; 
               case SDLK_LEFT:
-                curangle += 15. * M_PI/180. ;
-                printf("%g ", curangle/M_PI*180.) ; 
+                Parameters.azimuth += 15. * M_PI/180. ;
+                printf("%g ", Parameters.azimuth/M_PI*180.) ; 
                 image.reset_rays() ; 
-                image.set_normal(curangle) ; 
-                image.set_origin(1,curangle) ;   
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
                 image.set_rays() ; 
-                image.process_rays(FE, grains) ; 
+                image.process_rays(FE, Parameters.grains) ; 
                 image.apply_propagation() ; 
                 image.display(&Parameters.renderer, &Parameters.texture) ; 
                 break ; 
               case SDLK_RIGHT:
-                curangle -= 15. * M_PI/180. ;
-                printf("%g ", curangle/M_PI*180.) ;
+                Parameters.azimuth -= 15. * M_PI/180. ;
+                printf("%g ", Parameters.azimuth/M_PI*180.) ;
                 image.reset_rays() ; 
-                image.set_normal(curangle) ; 
-                image.set_origin(1,curangle) ; 
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
                 image.set_rays() ; 
-                image.process_rays(FE, grains) ; 
+                image.process_rays(FE, Parameters.grains) ; 
                 image.apply_propagation() ; 
                 image.display(&Parameters.renderer, &Parameters.texture) ; 
                 break ;
               case SDLK_c:
                 image.reset_rays_rgb() ; 
-                image.set_normal(curangle) ; 
-                image.set_origin(1,curangle) ; 
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
                 image.set_rays_rgb() ; 
-                image.process_rays_rgb(FE, grains) ; 
+                image.process_rays_rgb(FE, Parameters.grains) ; 
                 image.apply_propagation_rgb() ; 
                 image.display_rgb(&Parameters.renderer, &Parameters.texture) ; 
                 break ;

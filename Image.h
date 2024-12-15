@@ -26,6 +26,11 @@ public:
   void set_dxdz(double ddx, double ddz) {dx=ddx ; dz=ddz ; }
   void set_origin (vec v) {origin = v ; }
   void set_normal (vec v) {normal = v ; }
+  void set_normal_and_origin (double distance, double angle)
+  {
+    set_normal(angle) ; 
+    set_origin(distance, angle) ; 
+  }
   void set_origin (double distance, double angle) {origin = {distance*cos(angle), distance*sin(angle),0.}; }
   void set_normal (double angle) { normal = {-cos(angle), -sin(angle), 0.} ; }
   int size () {return w*h ;}

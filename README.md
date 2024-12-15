@@ -1,6 +1,7 @@
-
-
-
+This software calculate the theoretical photoelastic image produced by an assembly of 3D spheres. The stress in the spheres is calculated from a finite element simulation (FEM) of linear elasticity (using [Fenicsx](https://fenicsproject.org/download/)), and the ray propagation is caculated. Aspects of note: 
+- Input and output polariser can be changed on the fly. 
+- Setup can be rotated to look at the photoelasticity under different angle (image needs to be recomputed, which can take time). 
+- Colored photoelasticity is simulated using 3 different photoelastic constants for red, green, and blue.
 
 ## Install
 1. Simplest is to start by installing [Miniconda](https://docs.anaconda.com/miniconda/install/)
@@ -49,7 +50,7 @@ The detector always points towards (0,0,0).
   - `image size: [width, height]`: size of the image to produce, in pixels.
   - `pixel size`: physical size of the pixels of the image (in distance unit).
   - `distance`: distance between the center and the detector.
-  - `azymuth`: angle between the center of the detector and the x-axis.
+  - `azimuth`: angle between the center of the detector and the x-axis.
 
 ### Display and calculation parameters
 

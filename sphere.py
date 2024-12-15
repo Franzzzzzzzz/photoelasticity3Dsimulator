@@ -50,13 +50,15 @@ import basix.ufl
 domain, cell_tags, facet_tags = io.gmshio.model_to_mesh(model, MPI.COMM_WORLD, 0)
 mu = fem.Constant(domain, 1.)
 lambda_ = fem.Constant(domain, 1.25)
+#mu = 1
+#lambda_ = 1.25
 element = basix.ufl.element("Lagrange", domain.topology.cell_name(), 1, shape=(domain.geometry.dim, ))
 
 #V = fem.functionspace(domain, element)
 V = fem.functionspace(domain, ("Lagrange", 1, (domain.geometry.dim, )))
 
 def clamped_boundary(x):
-    return x[0]<-0.9 #np.sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2])<1
+    return x[2]<-0.9 #np.sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2])<1
 #def clamped_boundary(x):
     #return np.isclose(x[0], 0)
 
@@ -67,7 +69,10 @@ print(boundary_facets)
 u_D = np.array([0., 0., 0.])
 bc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, boundary_facets), V)
 
-T = fem.Constant(domain, (0., 0., 0.))
+#T = fem.Constant(domain, (0., 0., 0.))
+T = fem.Function(domain)
+T.x.array[:]=0  ;
+T.x.array[0,:]=(10000, 0, 0) ;
 ds = ufl.Measure("ds", domain=domain)
 
 def epsilon(u):
@@ -106,7 +111,7 @@ f.x.array[:]=0  ;
 a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx
 L = ufl.dot(f, v) * ufl.dx + ufl.dot(T, v) * ds
 
-
+#problem = LinearProblem(a, L, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
 problem = LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
 uh = problem.solve()
 

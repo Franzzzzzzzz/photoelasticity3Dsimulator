@@ -43,8 +43,8 @@ add_custom_command(
   COMMENT "Compile sphere.py using FFCx"
 )
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic -L/home/fguillard/miniconda3/envs/fenicsx-env2/lib -L/usr/lib/x86_64-linux-gnu ")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic  ")
+# -L/home/fguillard/miniconda3/envs/fenicsx-env2/lib -L/usr/lib/x86_64-linux-gnu
 add_executable(${PROJECT_NAME} Main.cpp Image.cpp Geometry.cpp Fem.cpp Cells.cpp ${CMAKE_CURRENT_BINARY_DIR}/sphere.c)
 target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread Eigen3::Eigen mpi)
 

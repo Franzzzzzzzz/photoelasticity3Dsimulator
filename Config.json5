@@ -1,7 +1,7 @@
 { 
   "detector": {
     "distance": 1,
-    "azymuth": 180,
+    "azimuth": 180,
     "pixel size": 0.01,
     "image size": [100,150]
   },
@@ -15,14 +15,17 @@
         {
           "location": [0,0,0.5],
           "force": [0,0,100]
-        }      
+        },
+        {
+          "location": [0,0,-0.5],
+          "force": [0,0,-100]
+        } 
       ]
     }
   ],
   "mesh": "../meshes/sphere_mesh.xdmf",
   "material": {
     "lambda": 1e6,
-    "mu": 1e6,
-    "rho": 1200
+    "mu": 1e6
   }
 }
