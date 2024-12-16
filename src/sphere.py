@@ -69,10 +69,10 @@ print(boundary_facets)
 u_D = np.array([0., 0., 0.])
 bc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, boundary_facets), V)
 
-#T = fem.Constant(domain, (0., 0., 0.))
-T = fem.Function(domain)
-T.x.array[:]=0  ;
-T.x.array[0,:]=(10000, 0, 0) ;
+T = fem.Constant(domain, (0., 0., 0.))
+#T = fem.Function(domain)
+#T.x.array[:]=0  ;
+#T.x.array[0,:]=(10000, 0, 0) ;
 ds = ufl.Measure("ds", domain=domain)
 
 def epsilon(u):
@@ -102,10 +102,10 @@ def sigma(u):
 
 u = ufl.TrialFunction(V)
 v = ufl.TestFunction(V)
-#f = fem.Constant(domain, (0., 0., rho*g))
+f = fem.Constant(domain, (0., 0., 0.))
 #f = PointLoad(pt=(2.5,0), vl=(a0,b0), tol=1e-1,degree = 1)
-f = fem.Function(V)
-f.x.array[:]=0  ;
+#f = fem.Function(V)
+#f.x.array[:]=0  ;
 #f.x.array[0::3]=rho*g ;
 
 a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx

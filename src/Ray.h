@@ -63,10 +63,10 @@ public:
     for (size_t i=0 ; i<sigma.size() ; i++)
     {
       std::complex<double> Mtmp[4] = {1,0,0,1} ; 
-      Mtmp[0]  = 1. - 1i * C * ds * (sigma[i][4]-sigma[i][8]) ; 
-      Mtmp[1]  =    - 1i * C * ds * (sigma[i][5]) ; 
-      Mtmp[2]  =    - 1i * C * ds * (sigma[i][5]) ; 
-      Mtmp[3]  = 1. + 1i * C * ds * (sigma[i][4]-sigma[i][8]); 
+      Mtmp[0]  = 1. - 1i * C * ds * (sigma[i][0]-sigma[i][8]) ; // Unclear if it should be the stress components (0,0) and (0,2) ; or (1,1) and (1,2) ...
+      Mtmp[1]  =    - 1i * C * ds * (sigma[i][2]) ; 
+      Mtmp[2]  =    - 1i * C * ds * (sigma[i][2]) ; 
+      Mtmp[3]  = 1. + 1i * C * ds * (sigma[i][0]-sigma[i][8]); 
       
       Mnew[0] = Mtmp[0] * M[0] + Mtmp[1]*M[2] ; 
       Mnew[1] = Mtmp[0] * M[1] + Mtmp[1]*M[3] ; 
@@ -104,10 +104,10 @@ public:
     
     for (size_t i=0 ; i<ds.size() ; i++)
     {
-      Mtmp(0,0) = - 1i * C * ds[i] * (sigma[i][4]-sigma[i][8]) ; 
-      Mtmp(0,1) = - 1i * C * ds[i] * (sigma[i][5]) ;  
-      Mtmp(1,0) = - 1i * C * ds[i] * (sigma[i][5]) ;  
-      Mtmp(1,1) = + 1i * C * ds[i] * (sigma[i][4]-sigma[i][8]);  
+      Mtmp(0,0) = - 1i * C * ds[i] * (sigma[i][0]-sigma[i][8]) ; 
+      Mtmp(0,1) = - 1i * C * ds[i] * (sigma[i][2]) ;  
+      Mtmp(1,0) = - 1i * C * ds[i] * (sigma[i][2]) ;  
+      Mtmp(1,1) = + 1i * C * ds[i] * (sigma[i][0]-sigma[i][8]);  
       M = M*(Mtmp.exp()) ; 
     }
     

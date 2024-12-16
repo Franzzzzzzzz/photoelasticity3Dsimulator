@@ -35,6 +35,7 @@ else()
     set(SCALAR_TYPE "--scalar_type=float32")
   endif()
 endif()
+
 add_custom_command(
   OUTPUT sphere.c
   COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/sphere.py ${SCALAR_TYPE}
@@ -42,10 +43,22 @@ add_custom_command(
   DEPENDS sphere.py
   COMMENT "Compile sphere.py using FFCx"
 )
+
+# Generate the fem_template files
+set (max_contacts "6" CACHE STRING "Maximum numbre of contact per grain")
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/fem_template_generator.sh ${CMAKE_CURRENT_BINARY_DIR}/fem_template_generator.sh USE_SOURCE_PERMISSIONS)
+add_custom_command(
+  OUTPUT fem_template
+  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fem_template_generator.sh ${max_contacts} ${CMAKE_CURRENT_SOURCE_DIR}
+  VERBATIM
+  DEPENDS fem_impl_2.cpp fem_template_generator.sh
+  COMMENT "Generate the FEM templates"
+)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -pedantic  ")
 # -L/home/fguillard/miniconda3/envs/fenicsx-env2/lib -L/usr/lib/x86_64-linux-gnu
-add_executable(${PROJECT_NAME} Main.cpp Image.cpp Geometry.cpp Fem.cpp Cells.cpp ${CMAKE_CURRENT_BINARY_DIR}/sphere.c)
+add_executable(${PROJECT_NAME} Main.cpp Image.cpp Geometry.cpp Fem.cpp Cells.cpp ${CMAKE_CURRENT_BINARY_DIR}/sphere.c fem_template)
 target_link_libraries(${PROJECT_NAME} dolfinx SDL2 pthread Eigen3::Eigen mpi)
 
 

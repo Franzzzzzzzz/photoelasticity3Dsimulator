@@ -140,10 +140,18 @@ std::vector<int> FEsolver::get_closest_points (const std::vector<std::array<doub
   auto dst = [&](int a,int b){ return ((contact_points[a][0]-meshpoints[b*3+0]) * (contact_points[a][0]-meshpoints[b*3+0]) + 
                                (contact_points[a][1]-meshpoints[b*3+1]) * (contact_points[a][1]-meshpoints[b*3+1]) + 
                                (contact_points[a][2]-meshpoints[b*3+2]) * (contact_points[a][2]-meshpoints[b*3+2])) ; } ; 
+                               
+  FILE * out ; 
+  out = fopen("log_meshgeom", "w") ; 
   for (size_t i=0 ; i<contact_points.size() ; i++) 
-    dist[i] = dst(i,0) ;
+  {
+    dist[i] = dst(i,0) ;    
+    fprintf(out, "%g, %g, %g\n", meshpoints[0], meshpoints[1], meshpoints[2]) ; 
+  }
+  
   for (int i=1 ; i<npt ; i++)
   {
+    fprintf(out, "%g, %g, %g\n", meshpoints[i*3+0], meshpoints[i*3+1], meshpoints[i*3+2]) ; 
     for (size_t j=0 ; j<contact_points.size() ; j++)
       if (dst(j,i) < dist[j])
       {
@@ -151,145 +159,152 @@ std::vector<int> FEsolver::get_closest_points (const std::vector<std::array<doub
         res[j]=i ; 
       }
   }
+  fclose(out) ; 
   return res ;   
 }
+// ====================================================
+// I apologise for this horrible, horrible code ...
 //------------------------------------------------
-void FEsolver::get_sigma(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & forces)
-{    
-  auto element = basix::create_element<U>(
-      basix::element::family::P, basix::cell::type::tetrahedron, 1,
-      basix::element::lagrange_variant::unset,
-      basix::element::dpc_variant::unset, false);
-  auto V = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(mesh, element, {3}));
-  
-  //auto f = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0.016});
-  auto f = std::make_shared<fem::Function<T>>(V);
-  printf("===> %d ", (*f->x()).array().size()) ; 
-  for (size_t i=0 ; i<(*f->x()).array().size() ; i++) 
-  { 
-    (*f->x()).mutable_array()[i]=0 ; 
-    //if (i%3==2)
-    //  (*f->x()).mutable_array()[i]=0.016 ; 
-  }
-  
-  auto id = get_closest_points(contact_points) ; 
-  printf("==> %d %d", contact_points.size(), id.size()) ; fflush(stdout) ;  
-  for (size_t i=0 ; i<contact_points.size() ; i++)
-  {    
-    (*f->x()).mutable_array()[3*id[i]+0]=forces[i][0] ;
-    (*f->x()).mutable_array()[3*id[i]+1]=forces[i][1] ;
-    (*f->x()).mutable_array()[3*id[i]+2]=forces[i][2] ; 
-  }
-  
-  auto g = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0});
-  auto mu = std::make_shared<fem::Constant<T>>(1);
-  auto lbd = std::make_shared<fem::Constant<T>>(1.25);
-  
-  // Define variational forms
-  auto a = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_a, {V, V}, {}, {{"mu", mu}, {"lambda_", lbd}}, {}, {}));
-  auto L = std::make_shared<fem::Form<T>>(fem::create_form<T>(*form_sphere_L, {V}, {{"f", f}}, {{"T", g}}, {}, {}));
-      
-  auto u = std::make_shared<fem::Function<T>>(V);
-
-  auto bdofs_left = fem::locate_dofs_geometrical(
-      *V,
-      [](auto x)
-      {
-        constexpr U eps = 1.0e-6;
-        std::vector<std::int8_t> marker(x.extent(1), false);
-        
-        int count = 0 ; 
-        for (std::size_t p = 0; p < x.extent(1); ++p)
-        {
-          if (std::abs(x(1, p)) < eps && std::abs(x(2, p)) < eps && std::abs(x(3, p)) < eps)
-          {
-            count ++ ;
-            marker[p] = true;
-          }
-        }
-        printf("BOUNDARY CONDITIONS: %d %d \n", count, x.extent(1)) ; 
-        /*for (std::size_t p = 0; p < x.extent(1); ++p)
-        {
-          if (x(1, p)<-0.45)
-          {
-            marker[p] = true;
-          }
-        }*/
-        return marker;
-      });
-  
-  auto bc = std::make_shared<const fem::DirichletBC<T>>(std::vector<T>{0, 0, 0},bdofs_left, V);
-  
-  auto A = la::petsc::Matrix(fem::petsc::create_matrix(*a), false);
-  la::Vector<T> b(L->function_spaces()[0]->dofmap()->index_map,
-                  L->function_spaces()[0]->dofmap()->index_map_bs());
-
-  
-  MatZeroEntries(A.mat());
-  fem::assemble_matrix(la::petsc::Matrix::set_block_fn(A.mat(), ADD_VALUES),
-                        *a, {bc});
-  MatAssemblyBegin(A.mat(), MAT_FLUSH_ASSEMBLY);
-  MatAssemblyEnd(A.mat(), MAT_FLUSH_ASSEMBLY);
-  fem::set_diagonal<T>(la::petsc::Matrix::set_fn(A.mat(), INSERT_VALUES), *V,
-                        {bc});
-  MatAssemblyBegin(A.mat(), MAT_FINAL_ASSEMBLY);
-  MatAssemblyEnd(A.mat(), MAT_FINAL_ASSEMBLY);
-
-  b.set(0.0);
-  fem::assemble_vector(b.mutable_array(), *L);
-  fem::apply_lifting<T, U>(b.mutable_array(), {a}, {{bc}}, {}, T(1));
-  b.scatter_rev(std::plus<T>());
-  bc->set(b.mutable_array(), {});
-
-  la::petsc::KrylovSolver lu(MPI_COMM_WORLD);
-  la::petsc::options::set("ksp_type", "preonly");
-  la::petsc::options::set("pc_type", "lu");
-  lu.set_from_options();
-
-  lu.set_operator(A.mat());
-  la::petsc::Vector _u(la::petsc::create_vector_wrap(*u->x()), false);
-  la::petsc::Vector _b(la::petsc::create_vector_wrap(b), false);
-  lu.solve(_u.vec(), _b.vec());
-
-  // Update ghost values before output
-  u->x()->scatter_fwd();
-
-  //  The function `u` will be modified during the call to solve. A
-  //  {cpp:class}`Function` can be saved to a file. Here, we output
-  //  the solution to a `VTK` file (specified using the suffix `.pvd`)
-  //  for visualisation in an external program such as Paraview.
-  constexpr auto family = basix::element::family::P;
-      
-  auto cell_type
-      = mesh::cell_type_to_basix_type(mesh->topology()->cell_type());
-  constexpr bool discontinuous = true;
-  basix::FiniteElement S_element = basix::create_element<U>(
-      family, cell_type, 0, basix::element::lagrange_variant::unset,
-      basix::element::dpc_variant::unset, discontinuous);
-  auto S = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(
-      mesh, S_element, std::vector<std::size_t>{3, 3}));
-  auto sigma_expression = fem::create_expression<T, U>(
-      *expression_sphere_stress, {{"uh", u}}, {{"mu", mu}, {"lambda_", lbd}});
-
-  auto sigma = fem::Function<double>(S);
-  sigma.name = "cauchy_stress";
-#if DOLFINX_VERSION_MINOR <= 8 
-  sigma.interpolate(sigma_expression, *mesh);
-#else
-  sigma.interpolate(sigma_expression);
-#endif
-  auto res = sigma.x()->mutable_array() ; 
-  
-  result.resize(res.size()) ; 
-  std::copy(res.begin(), res.end(), result.begin()) ; 
-  
-  // Save solution in VTK format
-  io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
-  file.write<T>({*u}, 0.0);
-  // Save Cauchy stress in XDMF format
-  io::XDMFFile file_sigma(mesh->comm(), "sigma.xdmf", "w");
-  file_sigma.write_mesh(*mesh);
-  file_sigma.write_function(sigma, 0.0);
+template <>
+void FEsolver::get_sigma<1>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+double c0=contact_points[0][0], c1=contact_points[0][1] , c2=contact_points[0][2] ;
+double d0=displacements[0][0], d1=displacements[0][1] , d2=displacements[0][2] ;
+#include "fem_impl_2_0.cpp"
+#undef THISBCS
+#define THISBCS() {bc0}
+#include "fem_impl_3.cpp"  
+}
+//------------------------------------------------
+template <>
+void FEsolver::get_sigma<2>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+int fid=0 ; 
+double c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+double d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_0.cpp"
+fid=1 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_1.cpp"
+#undef THISBCS
+#define THISBCS() {bc0, bc1}
+#include "fem_impl_3.cpp"  
+}
+//------------------------------------------------
+template <>
+void FEsolver::get_sigma<3>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+int fid=0 ; 
+double c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+double d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_0.cpp"
+fid=1 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_1.cpp"
+fid=2 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_2.cpp"
+#undef THISBCS
+#define THISBCS() {bc0, bc1, bc2}
+#include "fem_impl_3.cpp"  
+}
+//------------------------------------------------
+template <>
+void FEsolver::get_sigma<4>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+int fid=0 ; 
+double c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+double d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_0.cpp"
+fid=1 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_1.cpp"
+fid=2 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_2.cpp"
+fid=3 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_3.cpp"
+#undef THISBCS
+#define THISBCS() {bc0, bc1, bc2, bc3}
+#include "fem_impl_3.cpp"  
+}
+//------------------------------------------------
+template <>
+void FEsolver::get_sigma<5>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+int fid=0 ; 
+double c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+double d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_0.cpp"
+fid=1 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_1.cpp"
+fid=2 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_2.cpp"
+fid=3 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_3.cpp"
+fid=4 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_4.cpp"
+#undef THISBCS
+#define THISBCS() {bc0, bc1, bc2, bc3, bc4}
+#include "fem_impl_3.cpp"  
+}//------------------------------------------------
+template <>
+void FEsolver::get_sigma<6>(std::vector<double> &result, const std::vector<std::array<double,3>> &contact_points, const std::vector<std::array<double,3>> & displacements)
+{
+#define IDENTIFIER(name,id) name ## id
+#include "fem_impl_1.cpp"
+int fid=0 ; 
+double c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+double d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_0.cpp"
+fid=1 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_1.cpp"
+fid=2 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_2.cpp"
+fid=3 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_3.cpp"
+fid=4 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_4.cpp"
+fid=5 ;
+c0=contact_points[fid][0], c1=contact_points[fid][1] , c2=contact_points[fid][2] ;
+d0=displacements[fid][0], d1=displacements[fid][1] , d2=displacements[fid][2] ;
+#include "fem_impl_2_5.cpp"
+#undef THISBCS
+#define THISBCS() {bc0, bc1, bc2, bc3, bc4, bc5}
+#include "fem_impl_3.cpp"  
 }
 //------------------------------------------------
 std::vector<int> FEsolver::interpolate(std::vector<vec> & pos) 

@@ -1,12 +1,14 @@
 { 
   "detector": {
     "distance": 1,
-    "azimuth": 180,
+    "azimuth": 90,
     "pixel size": 0.01,
     "image size": [100,150]
   },
   "photoelastic constant" : [100, 80, 90, 100],
   "display size": [400,600],
+  "pre-polarisation": "left",
+  "post-polarisation": "right", 
   "grains": [
     {
       "center": [0,0,0],
@@ -14,12 +16,16 @@
       "contacts": [
         {
           "location": [0,0,0.5],
-          "force": [0,0,100]
+          "displacement": [0,0,-0.05]
         },
         {
-          "location": [0,0,-0.5],
-          "force": [0,0,-100]
-        } 
+          "location": [-0.433,0,-0.25],
+          "displacement": [0.0216,0,0.0125]
+        },
+        {
+          "location": [0.433,0,-0.25],
+          "displacement": [-0.0216,0,0.0125]
+        }
       ]
     }
   ],

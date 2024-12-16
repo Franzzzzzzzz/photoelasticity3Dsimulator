@@ -11,7 +11,8 @@ public:
   vec center ; 
   double r ;
   std::vector<std::array<double, 3>>  contactpoints ;
-  std::vector<std::array<double, 3>>  forces ; 
+  //std::vector<std::array<double, 3>>  forces ; 
+  std::vector<std::array<double, 3>>  displacements ; 
   
   std::vector<double> stress ; 
   

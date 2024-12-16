@@ -56,7 +56,7 @@ struct Parameters_
         for (auto &c: g["contacts"])
         {
           grains.back().contactpoints.push_back({c["location"][0], c["location"][1], c["location"][2]}) ; 
-          grains.back().forces.push_back({c["force"][0], c["force"][1], c["force"][2]}) ; 
+          grains.back().displacements.push_back({c["displacement"][0], c["displacement"][1], c["displacement"][2]}) ; 
         }
       }
     }
@@ -149,7 +149,7 @@ struct Parameters_
         else 
           printf("Unknown polarisation %s\n", value.get<std::string>().c_str()) ; 
       }
-      else if (key == "post_polarisation")
+      else if (key == "post-polarisation")
       {
         if (value.is_number())
           post_polarisation = Polariser::linear_jones(value) ; 

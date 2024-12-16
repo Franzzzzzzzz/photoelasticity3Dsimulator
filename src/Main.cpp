@@ -35,7 +35,6 @@ int main (int argc, char * argv[])
   if (argc>1)
   {
     auto j = Parameters.parameters_from_file(argv[1]) ; 
-    Parameters.parse_json(j) ; 
   }
   
   init_display() ; 
@@ -55,16 +54,49 @@ int main (int argc, char * argv[])
   for (size_t i=0 ; i<Parameters.grains.size() ; i++)
   {
     FE.prepare_mesh(Parameters.meshfile, Parameters.grains[i].r) ;     
-    FE.get_sigma(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].forces) ;  
+    switch (Parameters.grains[i].contactpoints.size()) {
+      case 1: FE.get_sigma<1>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 2: FE.get_sigma<2>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 3: FE.get_sigma<3>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 4: FE.get_sigma<4>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 5: FE.get_sigma<5>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 6: FE.get_sigma<6>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      default :
+        printf("ERR: this number contacts is not implemented.\n") ; 
+        FE.get_sigma<0>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+    }
     printf("FEM finished\n") ; 
   }
   
+  
   image.set_rays() ; 
+  
+  //for (int k=0 ; k<24; k++)
+  //{
+  image.reset_rays() ; 
+  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+  image.set_rays() ; 
+  
   image.process_rays(FE, Parameters.grains) ; 
   image.apply_propagation() ; 
   image.display(&Parameters.renderer, &Parameters.texture) ; 
   
   printf("ImageDisplayed") ; 
+  
+  /*SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, Parameters.screen_width, Parameters.screen_height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+  if (pScreenShot)
+  {
+    SDL_RenderReadPixels(Parameters.renderer, NULL, SDL_GetWindowPixelFormat(Parameters.window), pScreenShot->pixels, pScreenShot->pitch);
+    // Create the bmp screenshot file
+    std::string filename = "Screenshot-" + std::to_string(int(k)) + ".bmp" ; 
+    SDL_SaveBMP(pScreenShot, filename.c_str());
+    SDL_FreeSurface(pScreenShot);
+  }
+  
+  Parameters.azimuth -= 15./2. * M_PI/180. ;
+  printf("Current azimuth: %g \n", Parameters.azimuth/M_PI*180.) ;
+  }*/
+  
   //auto duration1= std::chrono::duration_cast<std::chrono::microseconds>(elapsed1).count() ; 
   //auto duration2= std::chrono::duration_cast<std::chrono::microseconds>(elapsed2).count() ; 
   //printf("%g %g\n", duration1/1000000., duration2/1000000.) ; 
@@ -175,8 +207,20 @@ int main (int argc, char * argv[])
                 image.apply_propagation_rgb() ; 
                 image.display_rgb(&Parameters.renderer, &Parameters.texture) ; 
                 break ;
+              case SDLK_s:
+                {
+                  // Read the pixels from the current render target and save them onto the surface
+                  SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, Parameters.screen_width, Parameters.screen_height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+                  if (pScreenShot)
+                  {
+                    SDL_RenderReadPixels(Parameters.renderer, NULL, SDL_GetWindowPixelFormat(Parameters.window), pScreenShot->pixels, pScreenShot->pitch);
+                    // Create the bmp screenshot file
+                    SDL_SaveBMP(pScreenShot, "Screenshot.bmp");
+                    SDL_FreeSurface(pScreenShot);
+                  }
+                }
+                break ; 
             }
-            image.display(&Parameters.renderer, &Parameters.texture) ; 
             break ; 
           case SDL_MOUSEBUTTONDOWN:  
            {

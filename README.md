@@ -2,6 +2,9 @@ This software calculate the theoretical photoelastic image produced by an assemb
 - Input and output polariser can be changed on the fly. 
 - Setup can be rotated to look at the photoelasticity under different angle (image needs to be recomputed, which can take time). 
 - Colored photoelasticity is simulated using 3 different photoelastic constants for red, green, and blue.
+- The Finite Element simulation is **displacement** controlled: ie. you need to specify a displacement corresponding to each contact, rather than a force. The displacement must be given in the global coordinate system, rather in the system of the contact (so not $\delta_n$ and $\delta_t$). 
+
+![](resources/Screenshot.gif)
 
 ## Install
 1. Simplest is to start by installing [Miniconda](https://docs.anaconda.com/miniconda/install/)
@@ -9,7 +12,7 @@ This software calculate the theoretical photoelastic image produced by an assemb
 3. Install gmsh (in the appropriate conda environment) `conda install -c conda-forge gmsh python-gmsh`
 4. Install SDL2: `sudo apt install libsdl2-dev`
 5. Compile & build: `mkdir build && cd build`
-6. `cmake .. && make`
+6. `cmake ../src && make`
 
 ## Parameters
 The configuration can be read from a json5 file directly provided on the commandline (`./photoelasticity config.json5`). The following key-values are recognised:
@@ -28,7 +31,7 @@ The configuration can be read from a json5 file directly provided on the command
   - `radius`: radius
   - `contacts`: array of objects defining the contacts. Each object contains:
     - `location`: point at which the force will be applied. More precisely, the force will be applied on the mesh point closest to that location. (array with 3 elements)
-    - `force`: the force applied (array with 3 elements).
+    - `displacement`: the displacement on the contact (array with 3 elements).
 
 ### Photoelasticity parameters
 
