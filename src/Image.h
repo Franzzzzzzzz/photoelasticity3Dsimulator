@@ -149,7 +149,7 @@ public:
       for (auto entry : entryexits)
       {
         auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ; 
-        ids = FE.interpolate(locations) ; 
+        ids = FE.interpolate(locations, grains[entry.objectid].center, grains[entry.objectid].r) ; 
         auto stress = grains[entry.objectid].stress_at(ids) ; 
         
         for (auto & s: stress)
@@ -178,7 +178,7 @@ public:
       {
         auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ;  
   
-        Geometry::intersection_ray_mesh (tetra_intersections, FE.tetras, {ray.destination[0], ray.destination[1], ray.destination[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
+        Geometry::intersection_ray_mesh (tetra_intersections, FE.get_tetras(grains[entry.objectid].r), {ray.destination[0]-grains[entry.objectid].center[0], ray.destination[1]-grains[entry.objectid].center[1], ray.destination[2]-grains[entry.objectid].center[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
       
         if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
         
@@ -220,7 +220,7 @@ public:
       {
         auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ;     
 
-        Geometry::intersection_ray_mesh (tetra_intersections, FE.tetras, {ray.destination[0], ray.destination[1], ray.destination[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
+        Geometry::intersection_ray_mesh (tetra_intersections, FE.get_tetras(grains[entry.objectid].r), {ray.destination[0]-grains[entry.objectid].center[0], ray.destination[1]-grains[entry.objectid].center[1], ray.destination[2]-grains[entry.objectid].center[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
       
         if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
         

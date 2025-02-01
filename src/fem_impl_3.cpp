@@ -39,20 +39,20 @@ u->x()->scatter_fwd();
 constexpr auto family = basix::element::family::P;
     
 auto cell_type
-    = mesh::cell_type_to_basix_type(mesh->topology()->cell_type());
+    = mesh::cell_type_to_basix_type(mesh_scaled[selected_mesh].mesh->topology()->cell_type());
 constexpr bool discontinuous = true;
 basix::FiniteElement S_element = basix::create_element<U>(
     family, cell_type, 0, basix::element::lagrange_variant::unset,
     basix::element::dpc_variant::unset, discontinuous);
 auto S = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(
-    mesh, S_element, std::vector<std::size_t>{3, 3}));
+    mesh_scaled[selected_mesh].mesh, S_element, std::vector<std::size_t>{3, 3}));
 auto sigma_expression = fem::create_expression<T, U>(
     *expression_sphere_stress, {{"uh", u}}, {{"mu", mu}, {"lambda_", lbd}});
 
 auto sigma = fem::Function<double>(S);
 sigma.name = "cauchy_stress";
 #if DOLFINX_VERSION_MINOR <= 8 
-sigma.interpolate(sigma_expression, *mesh);
+sigma.interpolate(sigma_expression, *(mesh_scaled[selected_mesh].mesh));
 #else
 sigma.interpolate(sigma_expression);
 #endif
@@ -65,6 +65,6 @@ std::copy(res.begin(), res.end(), result.begin()) ;
 io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
 file.write<T>({*u}, 0.0);
 // Save Cauchy stress in XDMF format
-io::XDMFFile file_sigma(mesh->comm(), "sigma.xdmf", "w");
-file_sigma.write_mesh(*mesh);
+io::XDMFFile file_sigma(mesh_scaled[selected_mesh].mesh->comm(), "sigma.xdmf", "w");
+file_sigma.write_mesh(*(mesh_scaled[selected_mesh].mesh));
 file_sigma.write_function(sigma, 0.0);

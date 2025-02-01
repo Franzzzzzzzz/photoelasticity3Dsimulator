@@ -39,6 +39,14 @@ public:
     return res ; 
   }
   
+  void disp() 
+  {
+    printf("o %g %g %g H %g\n", center[0], center[1], center[2], r) ; 
+    for (size_t i=0 ; i<contactpoints.size() ; i++)
+      printf("\t > %g %g %g - \u03B4 %g %g %g\n", contactpoints[i][0], contactpoints[i][1], contactpoints[i][2], displacements[i][0], displacements[i][1], displacements[i][2]) ; 
+    printf("\n"); 
+  }
+  
 } ;
 
 #endif

@@ -70,7 +70,11 @@ int Cells::init_cells(std::vector<std::pair<double,double>> &bounds, double ds)
     int bef = cells[i].neighbours.size() ; 
     cells[i].neighbours.erase( unique( cells[i].neighbours.begin(), cells[i].neighbours.end() ), cells[i].neighbours.end() );
     int aft = cells[i].neighbours.size() ; 
-    if (bef-aft != 0) printf("ERR: no duplication of cells should happen with the algorithm.\n") ;  
+    if (bef-aft != 0) 
+    {
+      printf("ERR: no duplication of cells should happen with the algorithm.\n") ;  
+      std::exit(0) ;  
+    }
     //cells[i].neighbours.erase(std::remove_if(cells[i].neighbours.begin(), cells[i].neighbours.end(), 
     //                                        [=](size_t x) { return x<=i ; }), cells[i].neighbours.end());
   }
@@ -118,6 +122,8 @@ int Cells::belonging_to(vec pos)
 int Cells::closest(std::vector<double> & X, vec pos)
 {
   int c = belonging_to(pos) ; 
+  if (c==-1)
+    printf("%g %g %g\n", pos[0], pos[1], pos[2]) ; 
   double mindst = 100000 ; int minid=-1 ; 
   
   // Inner cell contact

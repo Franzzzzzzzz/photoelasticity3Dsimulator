@@ -2,7 +2,7 @@
   "detector": {
     "distance": 1,
     "azimuth": 90,
-    "pixel size": 0.01,
+    "pixel size": 0.02,
     "image size": [100,150]
   },
   "photoelastic constant" : [100, 80, 90, 100],
@@ -12,23 +12,24 @@
   "grains": [
     {
       "center": [0,0,0],
-      "radius": 0.5,
+      "radius": 1,
       "contacts": [
         {
-          "location": [0,0,0.5],
+          "location": [0,0,1],
           "displacement": [0,0,-0.05]
         },
         {
-          "location": [-0.433,0,-0.25],
+          "location": [-0.866,0,-0.5],
           "displacement": [0.0216,0,0.0125]
         },
         {
-          "location": [0.433,0,-0.25],
+          "location": [0.866,0,-0.5],
           "displacement": [-0.0216,0,0.0125]
         }
       ]
     }
   ],
+  "strategy": "LINEAR_TETRAHEDRON_INVERSION", 
   "mesh": "../meshes/sphere_mesh.xdmf",
   "material": {
     "lambda": 1e6,

@@ -19,6 +19,7 @@ class Triangle
 {
 public: 
   Eigen::Vector3d M, u, v ; // One of the triangle vertex, and the 2 side vectors from that vertex. 
+  void rescale (double scaling) { M *= scaling ; u *= scaling ; v *= scaling ; }
   void disp() const {std::cout << M.transpose() << "|" << u.transpose() << "|" << v.transpose() << "\n";}
 } ; 
 class Tetrahedron
@@ -31,6 +32,13 @@ public:
   std::set<int> neigh_extended ;  
   unsigned char surface = 0 ; 
   
+  //----------------------------------
+  void rescale ( double scaling)
+  {
+    com *= scaling ; 
+    for (int i=0 ; i<4 ; i++)
+      triangles[i].rescale(scaling) ; 
+  }  
   //----------------------------------
   char identify_tri (std::vector<int>& vids)
   {

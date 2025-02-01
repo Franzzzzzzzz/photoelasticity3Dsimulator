@@ -45,7 +45,7 @@ add_custom_command(
 )
 
 # Generate the fem_template files
-set (max_contacts "6" CACHE STRING "Maximum numbre of contact per grain")
+set (max_contacts "7" CACHE STRING "Maximum numbre of contact per grain")
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/fem_template_generator.sh ${CMAKE_CURRENT_BINARY_DIR}/fem_template_generator.sh USE_SOURCE_PERMISSIONS)
 add_custom_command(
   OUTPUT fem_template

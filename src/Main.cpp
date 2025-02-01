@@ -40,6 +40,9 @@ int main (int argc, char * argv[])
   init_display() ; 
   //ASSUMPTION: ray always perpendicular to vertical z axis. 
   
+  for (auto &v: Parameters.grains)
+    v.disp() ; 
+  
   Image image(Parameters.imwidth,Parameters.imheight) ; 
    
   image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
@@ -51,9 +54,19 @@ int main (int argc, char * argv[])
   auto elapsed1 = std::chrono::high_resolution_clock::now()-start;
   auto elapsed2 = std::chrono::high_resolution_clock::now()-start;
   
+  std::vector<double> sizes(Parameters.grains.size()) ; 
   for (size_t i=0 ; i<Parameters.grains.size() ; i++)
-  {
-    FE.prepare_mesh(Parameters.meshfile, Parameters.grains[i].r) ;     
+    sizes[i] = Parameters.grains[i].r ; 
+  std::sort(sizes.begin(), sizes.end());
+  auto it = std::unique(sizes.begin(), sizes.end());
+  sizes.erase(it, sizes.end()); 
+  
+  FE.prepare_mesh(Parameters.meshfile, sizes) ; 
+  
+  
+  for (size_t i=0 ; i<Parameters.grains.size() ; i++)
+  {    
+    FE.select_mesh(Parameters.grains[i].r) ; // Run for side effect (select the mesh in class FE). 
     switch (Parameters.grains[i].contactpoints.size()) {
       case 1: FE.get_sigma<1>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
       case 2: FE.get_sigma<2>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
@@ -61,6 +74,7 @@ int main (int argc, char * argv[])
       case 4: FE.get_sigma<4>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
       case 5: FE.get_sigma<5>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
       case 6: FE.get_sigma<6>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
+      case 7: FE.get_sigma<7>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
       default :
         printf("ERR: this number contacts is not implemented.\n") ; 
         FE.get_sigma<0>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
@@ -106,7 +120,7 @@ int main (int argc, char * argv[])
   while ( SDL_WaitEvent(&event) >= 0 ) {
         switch (event.type) {
           case SDL_WINDOWEVENT:
-            //image.display(&Parameters.renderer, &Parameters.texture) ;   
+            image.display(&Parameters.renderer, &Parameters.texture) ;   
             break ;
           case SDL_KEYDOWN:
             switch(event.key.keysym.sym) {

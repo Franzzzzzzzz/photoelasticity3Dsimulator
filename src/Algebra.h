@@ -10,6 +10,7 @@ class vec {
 public :
   vec() = default ; 
   vec(double a, double b, double c) {v[0]=a ; v[1]=b; v[2]=c;}
+  vec(std::array<double,3> a) {v[0]=a[0] ; v[1]=a[1] ; v[2]=a[2] ;}
   double & operator[] (int i) { return v[i] ; }
   std::vector<double> v{0,0,0} ; 
   void normalise() {double l=sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]) ; for (int i=0 ; i<3 ; i++) v[i]/=l ; }

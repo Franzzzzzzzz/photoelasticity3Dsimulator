@@ -35,8 +35,7 @@ public:
     int res=0 ; 
     for (int dd=0; dd<3 ; dd++)
     {
-      if (v[dd] < 0 || v[dd]>=n_cell[dd]) {/*printf("WARN: particle outside the cell volume\n") ;*/ fflush(stdout) ; return -1 ; }
-      res += cum_n_cell[dd] * v[dd] ; 
+      res += cum_n_cell[dd] * ( v[dd]<0? 0 : (v[dd]>=n_cell[dd] ? n_cell[dd]-1 : v[dd])) ; 
     }
     return res ; 
   }
@@ -73,6 +72,12 @@ public:
     return sum ; 
   }
   //---------------------------------------------
+  void rescale(double scale)
+  {
+    for (auto &v: origin) v *= scale ; 
+    for (auto &v: delta) v *= scale ; 
+  }
+  
   std::vector<int> n_cell , cum_n_cell ; 
   std::vector<double> origin ; 
   std::vector<Cell> cells ;
