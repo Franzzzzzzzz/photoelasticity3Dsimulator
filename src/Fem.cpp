@@ -129,12 +129,7 @@ void FEsolver::prepare_mesh (std::string filename, std::vector<double> scalings)
     fclose(out);      
   }
   
-  // Scaling organising the required scalings:
-  printf("[[ %ld %ld ", scalings.size(), mesh_scaled.size()) ; 
-  for (auto & v: scalings)
-    printf("%g ", v) ; 
-  
-  
+  // Scaling organising the required scalings:  
   for (int i=mesh_scaled.size()-1 ; i>=0 ; i--)
   {
     //if (scalings[i]==1) continue ; 

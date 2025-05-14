@@ -10,6 +10,7 @@
 #include "Fem.h"
 
 extern struct Parameters_ Parameters ; 
+void progress(std::string title, float progress, int barWidth) ; 
 
 class Image {
 public: 
@@ -26,12 +27,12 @@ public:
   void set_dxdz(double ddx, double ddz) {dx=ddx ; dz=ddz ; }
   void set_origin (vec v) {origin = v ; }
   void set_normal (vec v) {normal = v ; }
-  void set_normal_and_origin (double distance, double angle)
+  void set_normal_and_origin (double distance, double angle, double elevation)
   {
     set_normal(angle) ; 
-    set_origin(distance, angle) ; 
+    set_origin(distance, angle, elevation) ; 
   }
-  void set_origin (double distance, double angle) {origin = {distance*cos(angle), distance*sin(angle),0.}; }
+  void set_origin (double distance, double angle, double elevation) {origin = {distance*cos(angle), distance*sin(angle), elevation}; }
   void set_normal (double angle) { normal = {-cos(angle), -sin(angle), 0.} ; }
   int size () {return w*h ;}
   
@@ -105,6 +106,14 @@ public:
       set_extra_value(i, rays_white[i].extra_value) ; 
     }
   }
+  void apply_absorption(double absorption)
+  {
+    for (int i=0 ; i<size() ; i++)
+    {
+      rays_white[i].apply_absorption(absorption) ;
+      set_pixel(i, rays_white[i].get_intensity()) ;
+    }
+  }
     
   void process_rays_rgb(FEsolver &FE, std::vector<Grains> &grains)
   {
@@ -120,21 +129,109 @@ public:
   {
     switch (Parameters.strategy){
       case Strategy::LINEAR_NEARESTNEIGHBOUR :
-        process_rays_linnearest(FE, grains, rays, photoelastic_constant) ;         
+        process_rays_t<Strategy::LINEAR_NEARESTNEIGHBOUR>(FE, grains, rays, photoelastic_constant) ; 
+        //process_rays_linnearest(FE, grains, rays, photoelastic_constant) ;         
         break ; 
       case Strategy::LINEAR_TETRAHEDRON_INVERSION:
-      case Strategy::LINEAR_TETRAHEDRON_MOLLERTRUMBORE:
-        process_rays_tetralin(FE, grains, rays, photoelastic_constant) ; 
+        process_rays_t<Strategy::LINEAR_TETRAHEDRON_INVERSION>(FE, grains, rays, photoelastic_constant) ; 
         break ; 
-      case Strategy::TETRAHEDRON_EXPONENTIAL_INVERSION:
+      case Strategy::LINEAR_TETRAHEDRON_MOLLERTRUMBORE:
+        //process_rays_tetralin(FE, grains, rays, photoelastic_constant) ; 
+        process_rays_t<Strategy::LINEAR_TETRAHEDRON_MOLLERTRUMBORE>(FE, grains, rays, photoelastic_constant) ; 
+        break ; 
+      case Strategy::TETRAHEDRON_EXPONENTIAL_INVERSION:       
+        process_rays_t<Strategy::TETRAHEDRON_EXPONENTIAL_INVERSION>(FE, grains, rays, photoelastic_constant) ; 
+        break ; 
       case Strategy::TETRAHEDRON_EXPONENTIAL_MOLLERTRUMBORE:
-        process_rays_tetraexp(FE, grains, rays, photoelastic_constant) ; 
+        process_rays_t<Strategy::TETRAHEDRON_EXPONENTIAL_MOLLERTRUMBORE>(FE, grains, rays, photoelastic_constant) ; 
+        //process_rays_tetraexp(FE, grains, rays, photoelastic_constant) ; 
         break ; 
       default:
         printf("ERR: unknown ray processing strategy.\n") ; 
-    }    
+    }
   }
   
+  template<Strategy S>
+  void process_rays_t(FEsolver &FE, std::vector<Grains> &grains,std::vector<Ray> & rays, double photoelastic_constant = Parameters.photoelastic_constant)
+  {
+    std::vector<int> ids ; ids.resize(Parameters.Ns) ; 
+    std::vector<std::tuple<double, double, int>> tetra_intersections ; 
+    std::vector<double> lengths ;
+    
+    // Constant rotation matrix (parallel beam), using the orientation from the first ray. 
+    auto R = rays[0].get_rotation_matrix() ; 
+    auto Rinv = rays[0].get_inv_rotation_matrix() ; 
+        
+    size_t i=0 ;
+    for (auto & ray : rays)
+    {
+      progress("rays", i/float(rays.size()), 50) ; 
+      process_ray_t<S>(ids, tetra_intersections, lengths, R, Rinv, FE, grains, ray, photoelastic_constant) ; 
+    }
+  }
+  
+  template <Strategy S>
+  void process_ray_t (std::vector<int> & ids, std::vector<std::tuple<double, double, int>> & tetra_intersections, std::vector<double> & lengths, tens & R, tens & Rinv, 
+                      FEsolver &FE, std::vector<Grains> &grains, Ray & ray, double photoelastic_constant, [[maybe_unused]] bool verbose=false)
+  {
+    auto entryexits = ray.find_grains_entryexit(grains) ; 
+    Geometry::reverse_sort_from(entryexits, ray.destination) ; 
+    
+    for (auto entry : entryexits)
+    {
+      ray.path_length += entry.distance() ; 
+      
+      auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ; 
+        
+      if constexpr ( S == Strategy::LINEAR_NEARESTNEIGHBOUR)
+        ids = FE.interpolate(locations, grains[entry.objectid].center, grains[entry.objectid].r) ;
+      else if constexpr ( S == Strategy::LINEAR_TETRAHEDRON_INVERSION || S==Strategy::LINEAR_TETRAHEDRON_MOLLERTRUMBORE)
+      {
+        Geometry::intersection_ray_mesh (tetra_intersections, FE.get_tetras(grains[entry.objectid].r), {ray.destination[0]-grains[entry.objectid].center[0], ray.destination[1]-grains[entry.objectid].center[1], ray.destination[2]-grains[entry.objectid].center[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
+    
+        if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
+        
+        size_t curid = 0 ; 
+        for (size_t j=0 ; j<ids.size() ; j++)
+        {
+          //double alpha = (locations[j][0]-ray.destination[0])/(normal[0]) ; //WARNING INCORRECT
+          double alpha = sqrt((locations[j][0]-ray.destination[0])*(locations[j][0]-ray.destination[0])
+                      +(locations[j][1]-ray.destination[1])*(locations[j][1]-ray.destination[1])
+                      +(locations[j][2]-ray.destination[2])*(locations[j][2]-ray.destination[2])) ; 
+          
+          for ( ; alpha > std::get<1>(tetra_intersections[curid]) && curid<tetra_intersections.size()-1 ; curid++) ;
+          ids[j] = std::get<2>(tetra_intersections[curid]) ; 
+        }
+      }
+      
+      else if constexpr (S == Strategy::TETRAHEDRON_EXPONENTIAL_INVERSION || S==Strategy::TETRAHEDRON_EXPONENTIAL_MOLLERTRUMBORE)
+      {
+        Geometry::intersection_ray_mesh (tetra_intersections, FE.get_tetras(grains[entry.objectid].r), {ray.destination[0]-grains[entry.objectid].center[0], ray.destination[1]-grains[entry.objectid].center[1], ray.destination[2]-grains[entry.objectid].center[2]} , {ray.direction[0], ray.direction[1], ray.direction[2]}) ;  
+      
+        if (tetra_intersections.size() == 0) {printf("There should be an intersection ...\n") ; continue ; }
+        
+        lengths.resize(tetra_intersections.size()) ;
+        ids.resize(tetra_intersections.size()) ;
+        for (size_t j=0 ; j<tetra_intersections.size() ; j++)
+        {
+          lengths[j] = fabs(std::get<1>(tetra_intersections[j]) - std::get<0>(tetra_intersections[j])) ; 
+          ids[j]=std::get<2>(tetra_intersections[j]) ; 
+        }
+      }        
+      
+      auto stress = grains[entry.objectid].stress_at(ids) ; 
+      
+      for (auto & s: stress)
+      {
+        s = Rinv*s;
+        s = s*R ; 
+      }     
+      ray.propagate(stress, photoelastic_constant, ds) ;
+    }
+  }
+  
+
+  /*
   void process_rays_linnearest(FEsolver &FE, std::vector<Grains> &grains, std::vector<Ray> & rays, double photoelastic_constant)
   {
     std::vector<int> ids ; ids.resize(Parameters.Ns) ; 
@@ -151,7 +248,6 @@ public:
         auto [locations, ds] = entry.locations_inbetween(Parameters.Ns) ; 
         ids = FE.interpolate(locations, grains[entry.objectid].center, grains[entry.objectid].r) ; 
         auto stress = grains[entry.objectid].stress_at(ids) ; 
-        
         for (auto & s: stress)
         {
           s = Rinv*s;
@@ -242,7 +338,7 @@ public:
         ray.propagate_exp(stress, photoelastic_constant, lengths) ; 
       }
     }
-  }
+  }*/
   
   void display(SDL_Renderer** renderer, SDL_Texture** texture) ;  
   void display_rgb(SDL_Renderer** renderer, SDL_Texture** texture) ; 

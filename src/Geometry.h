@@ -185,6 +185,7 @@ public:
     double ds = sqrt(dstsqr(pt2,pt1))/N ; 
     return {res,ds} ; 
   }
+  double distance() {return sqrt((pt1[0]-pt2[0])*(pt1[0]-pt2[0]) + (pt1[1]-pt2[1])*(pt1[1]-pt2[1]) + (pt1[2]-pt2[2])*(pt1[2]-pt2[2])) ;} 
   
 } ; 
 

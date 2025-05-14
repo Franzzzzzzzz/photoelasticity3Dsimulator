@@ -14,6 +14,7 @@ public:
   double extra_value=0 ; 
   vec_jones B, Bout ; 
   std::complex<double> M[4] = {1,0,0,1} ; // Transformation matrix
+  double path_length = 0 ; 
   
   tens get_rotation_matrix() 
   {
@@ -94,6 +95,11 @@ public:
     Bout[0] = M[0]*B[0] + M[1]*B[1] ; 
     Bout[1] = M[2]*B[0] + M[3]*B[1] ; 
     Bout.normalise_coherent() ; 
+  }
+  void apply_absorption(double absorption)
+  { 
+    Bout[0] = B[0]*exp(-absorption*path_length) ; 
+    Bout[1] = B[1]*exp(-absorption*path_length) ; 
   }
   
   

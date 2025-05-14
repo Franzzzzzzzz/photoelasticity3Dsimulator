@@ -17,7 +17,7 @@ int init_display()
 {            
   int SCREEN_HEIGHT = Parameters.screen_height ; 
   int SCREEN_WIDTH = Parameters.screen_width ; 
-  
+    
   Parameters.window = SDL_CreateWindow("Display", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   Parameters.renderer = SDL_CreateRenderer(Parameters.window, -1, SDL_RENDERER_ACCELERATED);
   Parameters.texture = SDL_CreateTexture(Parameters.renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, Parameters.imwidth, Parameters.imheight);
@@ -27,6 +27,18 @@ int init_display()
       return 0;
   }
   return 1 ; 
+}
+//------------------------------
+void progress(std::string title, float progress, int barWidth = 50) {
+    std::cout << title << " [";
+    int pos = static_cast<int>(barWidth * progress);
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
 }
 
 //==============================================================================
@@ -45,7 +57,7 @@ int main (int argc, char * argv[])
   
   Image image(Parameters.imwidth,Parameters.imheight) ; 
    
-  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth, Parameters.elevation) ; 
   image.set_dxdz(Parameters.im_dh, Parameters.im_dv) ; 
   
   FEsolver FE(argc, &argv) ; 
@@ -63,9 +75,9 @@ int main (int argc, char * argv[])
   
   FE.prepare_mesh(Parameters.meshfile, sizes) ; 
   
-  
   for (size_t i=0 ; i<Parameters.grains.size() ; i++)
-  {    
+  {  
+    progress("FEM: ", i/(float) Parameters.grains.size()) ;  
     FE.select_mesh(Parameters.grains[i].r) ; // Run for side effect (select the mesh in class FE). 
     switch (Parameters.grains[i].contactpoints.size()) {
       case 1: FE.get_sigma<1>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
@@ -79,7 +91,6 @@ int main (int argc, char * argv[])
         printf("ERR: this number contacts is not implemented.\n") ; 
         FE.get_sigma<0>(Parameters.grains[i].stress, Parameters.grains[i].contactpoints, Parameters.grains[i].displacements) ; break ;
     }
-    printf("FEM finished\n") ; 
   }
   
   
@@ -88,7 +99,7 @@ int main (int argc, char * argv[])
   //for (int k=0 ; k<24; k++)
   //{
   image.reset_rays() ; 
-  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+  image.set_normal_and_origin(Parameters.distance, Parameters.azimuth, Parameters.elevation) ; 
   image.set_rays() ; 
   
   image.process_rays(FE, Parameters.grains) ; 
@@ -197,7 +208,7 @@ int main (int argc, char * argv[])
                 Parameters.azimuth += 15. * M_PI/180. ;
                 printf("%g ", Parameters.azimuth/M_PI*180.) ; 
                 image.reset_rays() ; 
-                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth, Parameters.elevation) ; 
                 image.set_rays() ; 
                 image.process_rays(FE, Parameters.grains) ; 
                 image.apply_propagation() ; 
@@ -207,15 +218,23 @@ int main (int argc, char * argv[])
                 Parameters.azimuth -= 15. * M_PI/180. ;
                 printf("%g ", Parameters.azimuth/M_PI*180.) ;
                 image.reset_rays() ; 
-                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth, Parameters.elevation) ; 
                 image.set_rays() ; 
                 image.process_rays(FE, Parameters.grains) ; 
                 image.apply_propagation() ; 
                 image.display(&Parameters.renderer, &Parameters.texture) ; 
                 break ;
+              case SDLK_a:
+                Parameters.toggle_absorption = !Parameters.toggle_absorption ; 
+                if (Parameters.toggle_absorption)
+                  image.apply_absorption(Parameters.absorption) ;
+                else
+                  image.apply_propagation() ;
+                image.display(&Parameters.renderer, &Parameters.texture) ; 
+                break ; 
               case SDLK_c:
                 image.reset_rays_rgb() ; 
-                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth) ; 
+                image.set_normal_and_origin(Parameters.distance, Parameters.azimuth, Parameters.elevation) ; 
                 image.set_rays_rgb() ; 
                 image.process_rays_rgb(FE, Parameters.grains) ; 
                 image.apply_propagation_rgb() ; 

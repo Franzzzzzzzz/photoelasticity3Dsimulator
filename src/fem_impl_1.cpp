@@ -2,7 +2,6 @@ auto element = basix::create_element<U>(
       basix::element::family::P, basix::cell::type::tetrahedron, 1,
       basix::element::lagrange_variant::unset,
       basix::element::dpc_variant::unset, false);
-printf("==> %d\n", selected_mesh) ; fflush(stdout) ; 
 auto V = std::make_shared<fem::FunctionSpace<U>>(fem::create_functionspace(mesh_scaled[selected_mesh].mesh, element, {3}));
 
 auto f = std::make_shared<fem::Constant<T>>(std::vector<T>{0, 0, 0});

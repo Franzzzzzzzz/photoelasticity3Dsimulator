@@ -41,7 +41,7 @@ void Image::display(SDL_Renderer** renderer, SDL_Texture** texture)
 
   // Clear the renderer and render the texture
   SDL_RenderClear(*renderer);
-  SDL_RenderCopy(*renderer, *texture, nullptr, nullptr);
+  SDL_RenderCopyEx(*renderer, *texture, nullptr, nullptr, 0, NULL, SDL_FLIP_VERTICAL);
   SDL_RenderPresent(*renderer);
 } 
 

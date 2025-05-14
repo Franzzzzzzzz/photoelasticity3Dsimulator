@@ -34,9 +34,10 @@ struct Parameters_
   double photoelastic_constant_red   =  100; 
   double photoelastic_constant_green =  80; 
   double photoelastic_constant_blue  =  60; 
-  bool color = false ; 
+  bool color = false, toggle_absorption=false ; 
   double absorption = 0. ; 
   double azimuth = M_PI ; 
+  double elevation = 0 ;
   double distance = 1. ; 
   double lame[2]={1.,1.} ; 
   mat_jones post_polarisation = Polariser::vert_jones ; 
@@ -119,6 +120,8 @@ struct Parameters_
         distance = value ; 
       else if (key == "azimuth")
         azimuth = value.get<double>()/180.*M_PI ; 
+      else if (key == "elevation")
+        elevation = value; 
       else if (key == "image size") 
       {
         imwidth = value[0] ; 
